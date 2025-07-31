@@ -1,7 +1,9 @@
 package ufjf.dcc025.franquia.modelo;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 import javax.swing.text.html.parser.Entity;
 
@@ -21,42 +23,75 @@ public class Vendedor extends Usuario {
         this.totalVendas = 0;
     }
 
-    public Pedido registrarPedido(Cliente cliente, Map<Produto, Integer> produtos, String franquiaId, TiposPagamento formaPagamento, TiposEntrega metodoEntrega, String pedidoId, EntityRepository<Pedido> pedidosValidos) {
-        Pedido novoPedido = new Pedido(cliente, produtos, franquiaId, formaPagamento, metodoEntrega, pedidoId, this);
+    public Map<Produto, Integer> criarPedido() {
+        Map<Produto, Integer> produtos = new HashMap<>();
+        Scanner scanner = new Scanner(System.in);
+        
+        while (true) {
+            try {
+                System.out.println("Digite o nome do produto (ou 'sair' para finalizar):");
+                String input = scanner.nextLine();
+                
+                if (input.equalsIgnoreCase("sair")) {
+                    break;
+                }
+                
+                Produto produto = this.franquia.buscarProduto(input);
+                if (produto == null) {
+                    throw new IllegalArgumentException("Produto não encontrado!");
+                }
+                
+                System.out.println("Digite a quantidade:");
+                int quantidade = Integer.parseInt(scanner.nextLine());
+                
+                if (quantidade <= 0) {
+                    throw new IllegalArgumentException("Quantidade deve ser maior que zero!");
+                }
+                
+                produtos.put(produto, quantidade);
+                System.out.println("Produto adicionado: " + produto.getNome());
+                
+            } catch (IllegalArgumentException | NumberFormatException e) {
+                System.out.println("Erro: " + e.getMessage());
+                // Continue o loop - não encerra a função
+            }
+        }
+        
+        return produtos;
+    }
+
+    public Pedido registrarPedido(Cliente cliente, TiposPagamento formaPagamento, TiposEntrega metodoEntrega, String pedidoId, EntityRepository<Pedido> pedidosValidos) {
+        Map<Produto, Integer> produtos = criarPedido();
+        Pedido novoPedido = new Pedido(cliente, produtos, this.franquia, formaPagamento, metodoEntrega, pedidoId, this);
         pedidosId.add(pedidoId);
         pedidosValidos.upsert(novoPedido);
-        totalVendas += novoPedido.getValorTotal();
+        this.franquia.getGerente().adicionarPedidoPendente(pedidoId);
         return novoPedido;
     }
 
-    public Pedido excluirPedido (String pedidoId, EntityRepository<Pedido> pedidosValidos){
-        pedidosValidos.delete(pedidoId);
-        pedidosId.remove(pedidoId);
-        return null;
+    //cancelar pedido, não sei como fazer sem precisar criar mais uma lista pro gerente
+
+    public Pedido alterarPedido(String pedidoId, EntityRepository<Pedido> pedidosValidos) {
+        Pedido pedidoOriginal = pedidosValidos.findById(pedidoId);
+        
+        Map<Produto, Integer> produtosQuantidade = criarPedido();
+
+        Pedido copia = new Pedido(pedidoOriginal.getCliente(), new HashMap<>(produtosQuantidade), pedidoOriginal.getFranquia(), pedidoOriginal.getFormaPagamento(), pedidoOriginal.getMetodoEntrega(), pedidoOriginal.getId(), pedidoOriginal.getVendedor());
+        
+        this.franquia.getGerente().adicionarAlteracaoPedido(copia);
+        return copia;
     }
 
-    public List<Pedido> getPedidos(EntityRepository<Pedido> pedidosValidos) {
-        List<Pedido> pedidos = new ArrayList<>();
-        for (String pedidoId : pedidosId) {
-            Pedido pedido = pedidosValidos.findById(pedidoId);
-            if (pedido != null) {
-                pedidos.add(pedido);
-            }
-        }
-        return pedidos;
-    }
-
-    public void alterarMetodoEntrega(String pedidoId, EntityRepository<Pedido> pedidosValidos, TiposEntrega metodoEntrega){
-        Pedido pedido = pedidosValidos.findById(pedidoId);
-        pedido.setMetodoEntrega(metodoEntrega);
-    }
-
-    public void adicionarProduto(Produto produto, int quantidade, String pedidoId, EntityRepository<Pedido> pedidosValidos) {
-        Pedido pedido = pedidosValidos.findById(pedidoId);
-        if (pedido != null) {
-            pedido.adicionarProduto(produto, quantidade);
-        }
-        this.franquia.estoque.entrySet(produto, this.franquia.estoque.get(produto)-quantidade);
+    public Pedido alterarMetodoEntrega(String pedidoId, EntityRepository<Pedido> pedidosValidos, TiposEntrega metodoEntrega){
+        Pedido pedidoOriginal = pedidosValidos.findById(pedidoId);
+        
+        // Criando cópia
+        Pedido copia = new Pedido(
+            pedidoOriginal.getCliente(), new HashMap<>(pedidoOriginal.getProdutosQuantidade()), pedidoOriginal.getFranquia(), pedidoOriginal.getFormaPagamento(), metodoEntrega, pedidoOriginal.getId(), pedidoOriginal.getVendedor()
+        );
+        
+        this.franquia.getGerente().adicionarAlteracaoPedido(copia);
+        return copia;
     }
 
     public int getTotalVendas() {

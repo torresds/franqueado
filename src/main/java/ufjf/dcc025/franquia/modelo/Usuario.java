@@ -1,6 +1,8 @@
 package ufjf.dcc025.franquia.modelo;
 import java.util.regex.Pattern;
 
+import ufjf.dcc025.franquia.enums.TipoUsuario;
+
 
 public abstract class Usuario implements Identifiable {
     private String id;
@@ -79,7 +81,7 @@ public abstract class Usuario implements Identifiable {
         return id;
     }
 
-    public abstract String getTipoUsuario();
+    public abstract TipoUsuario getTipoUsuario();
     
     public boolean autenticar(String email, String senha) {
        return this.email.equalsIgnoreCase(email) && this.senha.equals(senha);

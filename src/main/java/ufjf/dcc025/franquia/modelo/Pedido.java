@@ -11,6 +11,7 @@ public class Pedido implements Identifiable {
     private final Date data;
     private final Cliente cliente;
     private final Vendedor vendedor;
+    private final Franquia franquia;
     private Map<Produto, Integer> produtosQuantidade;
     private final TiposPagamento formaPagamento;
     private TiposEntrega metodoEntrega;
@@ -18,11 +19,12 @@ public class Pedido implements Identifiable {
     private double valorFrete;
     private String status; // "Pendente", "Aprovado", "Cancelado"
 
-    public Pedido(Cliente cliente, Map<Produto, Integer> produtos, String franquiaId, TiposPagamento formaPagamento, TiposEntrega metodoEntrega, String id, Vendedor vendedor) {
+    public Pedido(Cliente cliente, Map<Produto, Integer> produtos, Franquia franquia, TiposPagamento formaPagamento, TiposEntrega metodoEntrega, String id, Vendedor vendedor) {
         this.id = id;
         this.data = new Date();
         this.cliente = cliente;
         this.vendedor = vendedor;
+        this.franquia = franquia;
         this.produtosQuantidade = new HashMap<>(produtos);
         this.formaPagamento = formaPagamento;
         this.metodoEntrega = metodoEntrega;
@@ -68,6 +70,7 @@ public class Pedido implements Identifiable {
     public Cliente getCliente() { return cliente; }
     public Vendedor getVendedor() { return vendedor; }
     public String getStatus() { return status; }
+    public Franquia getFranquia() { return franquia; }
     
     // Getters de produtos e pagamento
     public Map<Produto, Integer> getProdutosQuantidade() { return new HashMap<>(produtosQuantidade); }
@@ -87,6 +90,7 @@ public class Pedido implements Identifiable {
     //Setters
     public void setMetodoEntrega (TiposEntrega metodoEntrega){
         this.metodoEntrega = metodoEntrega;
+        this.atualizarValores();
     }
 
     @Override
