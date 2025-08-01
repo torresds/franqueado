@@ -58,7 +58,7 @@ public class Pedido implements Identifiable {
         atualizarValores();
     }
 
-    private void atualizarValores() {
+    public void atualizarValores() {
         this.valorFrete = calcularFrete();
         this.valorTotal = calcularValorTotal();
     }

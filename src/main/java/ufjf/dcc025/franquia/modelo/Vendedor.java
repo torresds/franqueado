@@ -98,6 +98,10 @@ public class Vendedor extends Usuario {
         return totalVendas;
     }
 
+    public void atualizarTotalVendas(double valor) {
+        this.totalVendas = this.totalVendas + valor;
+    }
+
     @Override
     public String toString() {
         return "Vendedor: " + getNome() + " | Vendas: " + totalVendas;

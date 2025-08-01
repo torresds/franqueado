@@ -48,6 +48,9 @@ public class Gerente extends Usuario {
         for (Produto produto : produtos.keySet()) {
             franquia.atualizarEstoque(produto, -produtos.get(produto));
         }
+        pedido.atualizarValores();
+        pedido.getVendedor().atualizarTotalVendas(pedido.getValorTotal());
+        pedido.getFranquia().atualizarReceita(pedido.getValorTotal());
         return pedido;
     }
 
@@ -100,6 +103,12 @@ public class Gerente extends Usuario {
                     }
                 }
             }
+            
+            double valorAntigo = pedidosValidos.findbyId(pedido.getId()).getValorTotal();
+            double valorNovo = pedido.getValorTotal();
+            
+            pedido.getVendedor().atualizarTotalVendas(valorNovo - valorAntigo);
+            pedido.getFranquia().atualizarReceita(valorNovo - valorAntigo);
         
             pedido.aprovarPedido();
             pedidosValidos.upsert(pedido);
