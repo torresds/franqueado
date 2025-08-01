@@ -17,6 +17,10 @@ public class Gerente extends Usuario {
         this.alteracoesPedidos = new ArrayList<>();
     }
 
+    //Alterar informação de vendedores cadastrados
+    //Cadastrar, editar e remover produtos
+    //Ver produtos que estão com estoque baixo (fazer essa função na Franquia)
+    //Acessar relatórios da Franquia, histórico, clientes recorrentes, etc. (talvez fazer na Franquia tbm?)
 
     //------------ GERENCIAMENTO DE VENDEDORES ------------
 
@@ -25,7 +29,7 @@ public class Gerente extends Usuario {
         vendedoresValidos.upsert(novoVendedor);
         return novoVendedor;
     }
-
+    
     public void removerVendedor(String idVendedor, EntityRepository<Vendedor> vendedores) {
         vendedores.delete(idVendedor);
     }

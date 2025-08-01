@@ -6,11 +6,12 @@ import java.util.Map;
 import java.util.HashMap;
 
 public class Franquia implements Identifiable {
-    private String id;
+    private final String id;
     private String nome;
     private String endereco;
     private Gerente gerente;
     private List<Vendedor> vendedores;
+    private List<String> pedidosId;
     private Map<Produto, Integer> estoque;
     private double receita;
 
@@ -20,6 +21,7 @@ public class Franquia implements Identifiable {
         this.endereco = endereco;
         setGerente(gerente, gerentesValidos);
         this.vendedores = new ArrayList<>();
+        this.vendasId = new ArrayList<>();
         this.estoque = new HashMap<>();
         this.receita = 0.0;
     }
@@ -33,6 +35,20 @@ public class Franquia implements Identifiable {
 
     public void removerVendedor(Vendedor vendedor) {
         vendedores.remove(vendedor);
+    }
+    
+    public void adicionarPedido(String pedidoId) {
+    	if (!pedidosId.contains(pedidoId)) {
+    		pedidosId.add(pedidoId);
+    	}
+    }
+    
+    public List<Pedido> listarPedidos(EntityRepository<Pedido> pedidosValidos){
+    	List<Pedido> pedidos = new ArrayList<>();
+    	for (String id : this.pedidosId) {
+    		pedidos.add(pedidosValidos.findbyId(id));
+    	}
+    	return pedidos;
     }
 
     public void adicionarProduto(Produto produto, int quantidade) {

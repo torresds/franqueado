@@ -66,6 +66,7 @@ public class Vendedor extends Usuario {
         pedidosId.add(pedidoId);
         pedidosValidos.upsert(novoPedido);
         this.franquia.getGerente().adicionarPedidoPendente(pedidoId);
+        this.franquia.adicionarPedido(pedidoId);
         return novoPedido;
     }
 
@@ -103,7 +104,7 @@ public class Vendedor extends Usuario {
     }
     
     public List<Pedido> listaPedidos (EntityRepository<Pedido> pedidosValidos){
-    	List<Pedido> listaPedidos = new ArrayList<Pedido>();
+    	List<Pedido> listaPedidos = new ArrayList<>();
     	for (String id : pedidosId) {
     		listaPedidos.add(pedidosValidos.findbyId(id));
     	}

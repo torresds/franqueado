@@ -39,6 +39,7 @@ public class Dono extends Usuario {
         return gerentes.findAll();
     }
 
+    //notificação caso uma unidade esteja sem gerente
     //botar função de atualizar informações de franquia e gerente, se necessário
     //botar função de ver desempenho de franquias o faturamento bruto, o número total de pedidos e o ticket médio
     //função de ver ranking de vendedores por franquia

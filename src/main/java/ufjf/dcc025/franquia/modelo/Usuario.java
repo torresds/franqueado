@@ -5,7 +5,7 @@ import ufjf.dcc025.franquia.enums.TipoUsuario;
 
 
 public abstract class Usuario implements Identifiable {
-    private String id;
+    private final String id;
     private String nome;
     private String cpf;
     private String email;
