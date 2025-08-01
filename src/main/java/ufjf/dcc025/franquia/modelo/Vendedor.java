@@ -13,7 +13,7 @@ import ufjf.dcc025.franquia.enums.TiposPagamento;
 
 public class Vendedor extends Usuario {
     private List<String> pedidosId;
-    private int totalVendas;
+    private double totalVendas;
     private Franquia franquia;
 
     public Vendedor(String nome, String cpf, String email, String senha, String id, Franquia franquia) {
@@ -94,12 +94,19 @@ public class Vendedor extends Usuario {
         return copia;
     }
 
-    public int getTotalVendas() {
+    public double getTotalVendas() {
         return totalVendas;
     }
 
     public void atualizarTotalVendas(double valor) {
         this.totalVendas = this.totalVendas + valor;
+    }
+    
+    public List<Pedido> listaPedidos (EntityRepository<Pedido> pedidosValidos){
+    	List<Pedido> listaPedidos = new ArrayList<Pedido>();
+    	for (String id : pedidosId) {
+    		listaPedidos.add(pedidosValidos.findbyId(id));
+    	}
     }
 
     @Override
