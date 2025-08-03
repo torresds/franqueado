@@ -25,7 +25,7 @@ public class Gerente extends Usuario {
     public Gerente(String nome, String cpf, String email, String senha, String franquiaId, EntityRepository<Franquia> franquiasValidas) {
         super(nome, cpf, email, senha);
         gerenteId++;
-        this.franquia = franquiasValidas.findById(franquiaId);
+        this.franquia = franquiasValidas.findById(franquiaId).orElse(null);
         this.pedidosPendentesId = new ArrayList<>();
         this.alteracoesPedidos = new ArrayList<>();
     }
@@ -44,12 +44,12 @@ public class Gerente extends Usuario {
     }
     
     public void removerVendedor(String vendedorId, EntityRepository<Vendedor> vendedores) {
-    	franquia.removerVendedor(vendedores.findById(vendedorId));
+    	franquia.removerVendedor(vendedores.findById(vendedorId).orElse(null));
         vendedores.delete(vendedorId);
     }
 
     public Vendedor editarVendedor(String idVendedor, String novoNome, String novoCpf, String novoEmail, String novaSenha, EntityRepository<Vendedor> vendedoresValidos) {
-        Vendedor vendedor = vendedoresValidos.findById(idVendedor);
+        Vendedor vendedor = vendedoresValidos.findById(idVendedor).orElse(null);
         if (vendedor == null) {
             throw new IllegalArgumentException("Vendedor com ID '" + idVendedor + "' não encontrado.");
         }
@@ -71,7 +71,7 @@ public class Gerente extends Usuario {
     //------------ GERENCIAMENTO DE PEDIDOS ------------
 
     public Pedido aceitarPedido(String pedidoId, EntityRepository<Pedido> pedidosValidos) {
-        Pedido pedido = pedidosValidos.findById(pedidoId);
+        Pedido pedido = pedidosValidos.findById(pedidoId).orElse(null);
         if (pedidosPendentesId.contains(pedidoId)) {
             pedido.aprovarPedido();
             pedidosPendentesId.remove(pedidoId);
@@ -87,7 +87,7 @@ public class Gerente extends Usuario {
     }
 
     public Pedido cancelarPedido(String pedidoId, EntityRepository<Pedido> pedidosValidos) {
-        Pedido pedido = pedidosValidos.findById(pedidoId);
+        Pedido pedido = pedidosValidos.findById(pedidoId).orElse(null);
         if (pedidosPendentesId.contains(pedidoId)) {
             pedido.cancelarPedido();
             pedidosPendentesId.remove(pedidoId);
@@ -98,7 +98,7 @@ public class Gerente extends Usuario {
     public List<Pedido> listarPedidosPendentes(EntityRepository<Pedido> pedidosValidos) {
         List<Pedido> pedidosPendentes = new ArrayList<>();
         for (String pedidoId : pedidosPendentesId) {
-            Pedido pedido = pedidosValidos.findById(pedidoId);
+            Pedido pedido = pedidosValidos.findById(pedidoId).orElse(null);
             if (pedido != null && pedido.isPendente()) {
                 pedidosPendentes.add(pedido);
             }
@@ -119,9 +119,9 @@ public class Gerente extends Usuario {
     public void aceitarAlteracaoPedido(Pedido pedido, EntityRepository<Pedido> pedidosValidos) {
         if (alteracoesPedidos.contains(pedido)) {
             
-            if (pedido.getMetodoEntrega() == pedidosValidos.findById(pedido.getId()).getMetodoEntrega()) {
+            if (pedido.getMetodoEntrega() == pedidosValidos.findById(pedido.getId()).orElse(null).getMetodoEntrega()) {
                 Map<Produto, Integer> produtosnovos = pedido.getProdutosQuantidade();
-                Map<Produto, Integer> produtosantigos = pedidosValidos.findById(pedido.getId()).getProdutosQuantidade();
+                Map<Produto, Integer> produtosantigos = pedidosValidos.findById(pedido.getId()).orElse(null).getProdutosQuantidade();
                 for (Produto produto : produtosnovos.keySet()) {
                     if (!produtosantigos.containsKey(produto)) {
                         franquia.atualizarEstoque(produto, produtosantigos.get(produto) - produtosnovos.get(produto));
@@ -136,7 +136,7 @@ public class Gerente extends Usuario {
                 }
             }
             
-            double valorAntigo = pedidosValidos.findbyId(pedido.getId()).getValorTotal();
+            double valorAntigo = pedidosValidos.findById(pedido.getId()).orElse(null).getValorTotal();
             double valorNovo = pedido.getValorTotal();
             
             pedido.getVendedor().atualizarTotalVendas(valorNovo - valorAntigo);
@@ -239,7 +239,7 @@ public class Gerente extends Usuario {
 
     public void atualizarEstoqueProduto(String codigoProduto, int novaQuantidade, String franquiaId, EntityRepository<Franquia> todasFranquias) {
         
-        Franquia franquiaEscolhida = todasFranquias.findById(franquiaId);
+        Franquia franquiaEscolhida = todasFranquias.findById(franquiaId).orElse(null);
         if (franquiaEscolhida == null) {
             throw new IllegalArgumentException("Franquia com ID '" + franquiaId + "' não encontrada.");
         }
@@ -262,7 +262,7 @@ public class Gerente extends Usuario {
 
     public List<String> listarProdutosEstoqueBaixo(String franquiaId, int limiteMinimo, EntityRepository<Franquia> todasFranquias) {
 
-        Franquia franquiaEscolhida = todasFranquias.findById(franquiaId);
+        Franquia franquiaEscolhida = todasFranquias.findById(franquiaId).orElse(null);
         if (franquiaEscolhida == null) {
             throw new IllegalArgumentException("Franquia com ID '" + franquiaId + "' não encontrada.");
         }
@@ -304,7 +304,7 @@ public class Gerente extends Usuario {
 	    int pedidosPendentes = 0;
 	    
 	    for (String pedidoId : pedidosId) {
-	        Pedido pedido = repositorioPedidos.findById(pedidoId);
+	        Pedido pedido = repositorioPedidos.findById(pedidoId).orElse(null);
 	        if (pedido != null) {
 	            System.out.printf("🛒 %s | %s | R$ %.2f | %s%n", 
 	                            pedidoId, 
@@ -347,7 +347,7 @@ public class Gerente extends Usuario {
 	    int pedidosAprovadosPeriodo = 0;
 	    
 	    for (String pedidoId : pedidosId) {
-	        Pedido pedido = repositorioPedidos.findById(pedidoId);
+	        Pedido pedido = repositorioPedidos.findById(pedidoId).orElse(null);
 	        if (pedido != null) {
 	            System.out.printf("🛒 %s | %s | %s | R$ %.2f | %s%n", 
 	                            pedidoId, 

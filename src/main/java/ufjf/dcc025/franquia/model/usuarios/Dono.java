@@ -56,7 +56,7 @@ public class Dono extends Usuario {
     }
 
     public void atualizarFranquia(String id, String nome, String endereco, EntityRepository<Franquia> franquias) {
-        Franquia franquia = franquias.findbyId(id);
+        Franquia franquia = franquias.findById(id).orElse(null);
         if (franquia != null) {
             franquia.setNome(nome);
             franquia.setEndereco(endereco);
@@ -75,7 +75,7 @@ public class Dono extends Usuario {
     }
 
     public void removerGerente(EntityRepository<Gerente> gerentes, String idGerente) {
-    	Gerente gerente = gerentes.findById(idGerente);
+    	Gerente gerente = gerentes.findById(idGerente).orElse(null);
     	gerente.getFranquia().setGerente(null);
         gerentes.delete(idGerente);
     }
@@ -85,9 +85,9 @@ public class Dono extends Usuario {
     }
 
     public void atualizarGerente(String id, String nome, String cpf, String email, String senha, String franquiaId, EntityRepository<Gerente> gerentes, EntityRepository<Franquia> franquias) {
-    	Gerente gerente = gerentes.findbyId(id);
+    	Gerente gerente = gerentes.findById(id).orElse(null);
         if (gerente != null) {
-        	Franquia novaFranquia = franquias.findById(franquiaId);
+        	Franquia novaFranquia = franquias.findById(franquiaId).orElse(null);
         	if (!gerente.getFranquia().equals(novaFranquia)) {
         		if (!novaFranquia.getGerente().equals(null)) {
         			throw new IllegalArgumentException("Franquia já tem Gerente.");
@@ -108,8 +108,8 @@ public class Dono extends Usuario {
     }
 
     public void SetGerenteFranquia(String franquiaId, String gerenteId, EntityRepository<Franquia> franquias, EntityRepository<Gerente> gerentes) {
-        Franquia franquia = franquias.findbyId(franquiaId);
-        Gerente gerente = gerentes.findbyId(gerenteId);
+        Franquia franquia = franquias.findById(franquiaId).orElse(null);
+        Gerente gerente = gerentes.findById(gerenteId).orElse(null);
         if (franquia != null && gerente != null) {
             franquia.setGerente(gerente);
             franquias.upsert(franquia);
@@ -156,7 +156,7 @@ public class Dono extends Usuario {
     }
 
     public List<String> rankingVendedoresPorFranquia(EntityRepository<Franquia> franquias, EntityRepository<Vendedor> vendedores, String franquiaId) {
-        Franquia franquia = franquias.findbyId(franquiaId);
+        Franquia franquia = franquias.findById(franquiaId).orElse(null);
         if (franquia == null) {
             throw new IllegalArgumentException("Franquia não encontrada.");
         }

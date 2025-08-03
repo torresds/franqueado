@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-
 import javax.swing.text.html.parser.Entity;
 
 import ufjf.dcc025.franquia.enums.TipoUsuario;
@@ -84,7 +83,7 @@ public class Vendedor extends Usuario {
     }
 
     public Pedido alterarPedido(String pedidoId, EntityRepository<Pedido> pedidosValidos) {
-        Pedido pedidoOriginal = pedidosValidos.findById(pedidoId);
+        Pedido pedidoOriginal = pedidosValidos.findById(pedidoId).orElse(null);
         
         Map<Produto, Integer> produtosQuantidade = criarPedido();
 
@@ -95,7 +94,7 @@ public class Vendedor extends Usuario {
     }
 
     public Pedido alterarMetodoEntrega(String pedidoId, EntityRepository<Pedido> pedidosValidos, TiposEntrega metodoEntrega){
-        Pedido pedidoOriginal = pedidosValidos.findById(pedidoId);
+        Pedido pedidoOriginal = pedidosValidos.findById(pedidoId).orElse(null);
         
         // Criando cópia
         Pedido copia = new Pedido(
@@ -117,7 +116,7 @@ public class Vendedor extends Usuario {
     public List<Pedido> listaPedidos (EntityRepository<Pedido> pedidosValidos){
     	List<Pedido> listaPedidos = new ArrayList<>();
     	for (String id : pedidosId) {
-    		listaPedidos.add(pedidosValidos.findbyId(id));
+    		listaPedidos.add(pedidosValidos.findById(id).orElse(null));
     	}
     	return listaPedidos;
     }
@@ -135,7 +134,7 @@ public class Vendedor extends Usuario {
     }
 
     public Cliente editarCliente(String clienteId, String novoNome, String novoCpf, String novoEmail, String novoTelefone, String novoEndereco, EntityRepository<Cliente> clientes) {
-        Cliente cliente = clientes.findById(clienteId);
+        Cliente cliente = clientes.findById(clienteId).orElse(null);
         if (cliente == null) {
             throw new IllegalArgumentException("Cliente com ID '" + clienteId + "' não encontrado.");
         }

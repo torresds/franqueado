@@ -80,7 +80,7 @@ public class Franquia implements Identifiable {
     public List<Pedido> listarPedidos(EntityRepository<Pedido> pedidosValidos){
     	List<Pedido> pedidos = new ArrayList<>();
     	for (String id : this.pedidosId) {
-    		pedidos.add(pedidosValidos.findbyId(id));
+    		pedidos.add(pedidosValidos.findById(id).orElse(null));
     	}
     	return pedidos;
     }
@@ -150,7 +150,7 @@ public class Franquia implements Identifiable {
         List<String> pedidosIdNoPeriodo = new ArrayList<>();
         
         for (String pedidoId : this.pedidosId) {
-            Pedido pedido = repositorioPedidos.findById(pedidoId);
+            Pedido pedido = repositorioPedidos.findById(pedidoId).orElse(null);
             if (pedido != null) {
                 Date dataPedido = pedido.getData();
                 if ((dataPedido.equals(dataInicio) || dataPedido.after(dataInicio)) && 
@@ -187,7 +187,7 @@ public class Franquia implements Identifiable {
         Map<Produto, Integer> produtosVendidos = new HashMap<>();
         
         for (String pedidoId : pedidosId) {
-            Pedido pedido = repositorioPedidos.findById(pedidoId);
+            Pedido pedido = repositorioPedidos.findById(pedidoId).orElse(null);
             if (pedido != null) {
                 for (Map.Entry<Produto, Integer> entry : pedido.getProdutosQuantidade().entrySet()) {
                     produtosVendidos.merge(entry.getKey(), entry.getValue(), Integer::sum);
@@ -246,7 +246,7 @@ public class Franquia implements Identifiable {
         return endereco; 
     }
     
-    public String setEndereco(String endereco) {
+    public void setEndereco(String endereco) {
     	this.endereco = endereco;
     }
     
@@ -255,7 +255,7 @@ public class Franquia implements Identifiable {
     }
 
     public void setGerente(String gerenteId, EntityRepository<Gerente> gerentesValidos) {
-        Gerente gerente = gerentesValidos.findById(gerenteId);
+        Gerente gerente = gerentesValidos.findById(gerenteId).orElse(null);
         if (gerente == null) {
             throw new IllegalArgumentException("Gerente não encontrado.");
         }
