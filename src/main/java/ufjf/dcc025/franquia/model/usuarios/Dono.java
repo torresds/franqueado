@@ -59,7 +59,7 @@ public class Dono extends Usuario {
             franquia.setEndereco(endereco);
             franquias.upsert(franquia);
         } else {
-            throw new IllegalArgumentException("Franquia não encontrada.");
+            throw new EntidadeNaoEncontradaException(id);
         }
     }
  
@@ -92,7 +92,7 @@ public class Dono extends Usuario {
         	Franquia novaFranquia = franquias.findById(franquiaId).orElse(null);
         	if (!gerente.getFranquia().equals(novaFranquia)) {
         		if (!novaFranquia.getGerente().equals(null)) {
-        			throw new IllegalArgumentException("Franquia já tem Gerente.");
+        			throw new DadosInvalidosException("Franquia já tem Gerente.");
         		}
         		gerente.getFranquia().setGerente(null);
         		novaFranquia.setGerente(gerente);
@@ -105,7 +105,7 @@ public class Dono extends Usuario {
             gerente.setFranquia(novaFranquia);
         	
         } else {
-            throw new IllegalArgumentException("Gerente não encontrado.");
+            throw new EntidadeNaoEncontradaException(id);
         }
     }
 
@@ -116,7 +116,7 @@ public class Dono extends Usuario {
             franquia.setGerente(gerente);
             franquias.upsert(franquia);
         } else {
-            throw new IllegalArgumentException("Franquia ou Gerente não encontrado.");
+            throw new EntidadeNaoEncontradaException(franquiaId + " ou " + gerenteId);
         }
     }
 
@@ -160,7 +160,7 @@ public class Dono extends Usuario {
     public List<String> rankingVendedoresPorFranquia(EntityRepository<Franquia> franquias, EntityRepository<Vendedor> vendedores, String franquiaId) {
         Franquia franquia = franquias.findById(franquiaId).orElse(null);
         if (franquia == null) {
-            throw new IllegalArgumentException("Franquia não encontrada.");
+            throw new EntidadeNaoEncontradaException(franquiaId);
         }
         
         Map<String, Double> ranking = new HashMap<>();

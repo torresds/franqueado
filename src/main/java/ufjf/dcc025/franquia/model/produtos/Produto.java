@@ -1,5 +1,7 @@
 package ufjf.dcc025.franquia.model.produtos;
 
+import ufjf.dcc025.franquia.exception.*;
+
 public class Produto {
 
 	private String Codigo;
@@ -21,30 +23,30 @@ public class Produto {
     
     private void setNome(String nome) {
         if (nome == null || nome.trim().isEmpty()) {
-            throw new IllegalArgumentException("Nome do produto não pode ser vazio.");
+            throw new DadosInvalidosException("Nome do produto não pode ser vazio.");
         }
         if (nome.trim().length() < 2) {
-            throw new IllegalArgumentException("Nome do produto deve ter pelo menos 2 caracteres.");
+            throw new DadosInvalidosException("Nome do produto deve ter pelo menos 2 caracteres.");
         }
         this.nome = nome.trim();
     }
 
     private void setDescricao(String descricao) {
         if (descricao == null || descricao.trim().isEmpty()) {
-            throw new IllegalArgumentException("Descrição do produto não pode ser vazia.");
+            throw new DadosInvalidosException("Descrição do produto não pode ser vazia.");
         }
         if (descricao.trim().length() < 5) {
-            throw new IllegalArgumentException("Descrição deve ter pelo menos 5 caracteres.");
+            throw new DadosInvalidosException("Descrição deve ter pelo menos 5 caracteres.");
         }
         this.descricao = descricao.trim();
     }
 
     private void setPreco(double preco) {
         if (preco <= 0) {
-            throw new IllegalArgumentException("Preço deve ser maior que zero.");
+            throw new DadosInvalidosException("Preço deve ser maior que zero.");
         }
         if (preco > 999999.99) {
-            throw new IllegalArgumentException("Preço não pode exceder R$ 999.999,99.");
+            throw new DadosInvalidosException("Preço não pode exceder R$ 999.999,99.");
         }
         this.preco = preco;
     }
@@ -72,13 +74,13 @@ public class Produto {
 
     private void validarProduto() {
         if (nome == null || nome.trim().isEmpty()) {
-            throw new IllegalArgumentException("Nome inválido");
+            throw new DadosInvalidosException("Nome inválido");
         }
         if (descricao == null || descricao.trim().isEmpty()) {
-            throw new IllegalArgumentException("Descrição inválida");
+            throw new DadosInvalidosException("Descrição inválida");
         }
         if (preco <= 0) {
-            throw new IllegalArgumentException("Preço inválido");
+            throw new DadosInvalidosException("Preço inválido");
         }
     }
 

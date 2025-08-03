@@ -14,6 +14,7 @@ import ufjf.dcc025.franquia.model.produtos.Produto;
 import ufjf.dcc025.franquia.model.pedidos.Pedido;
 import ufjf.dcc025.franquia.model.usuarios.*;
 import ufjf.dcc025.franquia.model.clientes.Cliente;
+import ufjf.dcc025.franquia.exception.*;
 
 public class Franquia implements Identifiable {
     private String id;
@@ -97,7 +98,7 @@ public class Franquia implements Identifiable {
         if (estoque.containsKey(produto)) {
             estoque.remove(produto);
         } else {
-            throw new IllegalArgumentException("Produto não encontrado no estoque.");
+            throw new EntidadeNaoEncontradaException(produto.getCodigo());
         }
     }
 
@@ -105,12 +106,12 @@ public class Franquia implements Identifiable {
         if (estoque.containsKey(produto)) {
             int quantidadeAtual = estoque.get(produto);
             if (quantidadeAtual + quantidade < 0) {
-                throw new IllegalArgumentException("Quantidade insuficiente no estoque.");
+                throw new EstoqueInsuficienteException(produto.getNome(), quantidadeAtual, quantidade );
             }
             estoque.put(produto, quantidadeAtual + quantidade);
         } else {
             if (quantidade < 0) {
-                throw new IllegalArgumentException("Produto não encontrado no estoque.");
+                throw new DadosInvalidosException("Produto não encontrado no estoque.");
             }
             estoque.put(produto, quantidade);
         }
@@ -127,7 +128,7 @@ public class Franquia implements Identifiable {
 
     public void checarDisponibilidade(Produto produto, int quantidade) {
         if (!estoque.containsKey(produto) || estoque.get(produto) < quantidade) {
-            throw new IllegalArgumentException("Produto não disponível em estoque.");
+            throw new DadosInvalidosException("Produto não disponível em estoque.");
         }
     }
     
@@ -139,11 +140,11 @@ public class Franquia implements Identifiable {
 
     public List<String> gerarRelatorioVendasPeriodo(Date dataInicio, Date dataFim, EntityRepository<Pedido> repositorioPedidos) {
         if (dataInicio == null || dataFim == null) {
-            throw new IllegalArgumentException("Datas de início e fim não podem ser nulas.");
+            throw new DadosInvalidosException("Datas de início e fim não podem ser nulas.");
         }
         
         if (dataInicio.after(dataFim)) {
-            throw new IllegalArgumentException("Data de início não pode ser posterior à data fim.");
+            throw new DadosInvalidosException("Data de início não pode ser posterior à data fim.");
         }
         
         List<String> pedidosIdNoPeriodo = new ArrayList<>();
@@ -256,7 +257,7 @@ public class Franquia implements Identifiable {
     public void setGerente(String gerenteId, EntityRepository<Gerente> gerentesValidos) {
         Gerente gerente = gerentesValidos.findById(gerenteId).orElse(null);
         if (gerente == null) {
-            throw new IllegalArgumentException("Gerente não encontrado.");
+            throw new EntidadeNaoEncontradaException(gerenteId);
         }
         this.gerente = gerente;
     }

@@ -53,7 +53,7 @@ public class Gerente extends Usuario {
     public Vendedor editarVendedor(String idVendedor, String novoNome, String novoCpf, String novoEmail, String novaSenha, EntityRepository<Vendedor> vendedoresValidos) {
         Vendedor vendedor = vendedoresValidos.findById(idVendedor).orElse(null);
         if (vendedor == null) {
-            throw new IllegalArgumentException("Vendedor com ID '" + idVendedor + "' não encontrado.");
+            throw new EntidadeNaoEncontradaException(idVendedor);
         }
         vendedor.setNome(novoNome);
         vendedor.setCpf(novoCpf);
@@ -163,7 +163,7 @@ public class Gerente extends Usuario {
         for (Franquia franquia : todasFranquias.findAll()) {
             Produto produtoExistente = franquia.buscarProduto(codigo);
             if (produtoExistente != null) {
-                throw new IllegalArgumentException("Codigo '" + codigo + "' já cadastrado no sistema.");
+                throw new DadosInvalidosException("Codigo '" + codigo + "' já cadastrado no sistema.");
             }
         }
         Produto novoProduto = new Produto(codigo, nome, descricao, preco);
@@ -185,14 +185,14 @@ public class Gerente extends Usuario {
         }
     
         if (produtoExistente == null) {
-            throw new IllegalArgumentException("Codigo '" + codigo + "' não encontrado no sistema.");
+            throw new EntidadeNaoEncontradaException(codigo);
      }
     /*
         if (!nomeAntigo.equals(novoNome)) {
             for (Franquia franquia : todasFranquias.findAll()) {
                 Produto produtoComNovoNome = franquia.buscarProduto(novoNome);
                 if (produtoComNovoNome != null) {
-                    throw new IllegalArgumentException("Já existe um produto com o nome '" + novoNome + "'.");
+                    throw new DadosInvalidosException("Já existe um produto com o nome '" + novoNome + "'.");
                 }
             }
     }
@@ -226,7 +226,7 @@ public class Gerente extends Usuario {
         }
 
         if (!produtoEncontrado) {
-            throw new IllegalArgumentException("Codigo '" + codigoProduto + "' não encontrado no sistema.");
+            throw new EntidadeNaoEncontradaException(codigoProduto);
         }
         
         for (Franquia franquia : todasFranquias.findAll()) {
@@ -243,16 +243,16 @@ public class Gerente extends Usuario {
         
         Franquia franquiaEscolhida = todasFranquias.findById(franquiaId).orElse(null);
         if (franquiaEscolhida == null) {
-            throw new IllegalArgumentException("Franquia com ID '" + franquiaId + "' não encontrada.");
+            throw new EntidadeNaoEncontradaException(franquiaId);
         }
         
         Produto produto = franquiaEscolhida.buscarProduto(codigoProduto);
         if (produto == null) {
-            throw new IllegalArgumentException("Codigo '" + codigoProduto + "' não encontrado na franquia '" + franquiaEscolhida.getNome() + "'.");
+            throw new EntidadeNaoEncontradaException(codigoProduto);
         }
         
         if (novaQuantidade < 0) {
-            throw new IllegalArgumentException("Quantidade não pode ser negativa.");
+            throw new DadosInvalidosException("Quantidade não pode ser negativa.");
         }
         
         franquiaEscolhida.removerProduto(produto);
@@ -266,7 +266,7 @@ public class Gerente extends Usuario {
 
         Franquia franquiaEscolhida = todasFranquias.findById(franquiaId).orElse(null);
         if (franquiaEscolhida == null) {
-            throw new IllegalArgumentException("Franquia com ID '" + franquiaId + "' não encontrada.");
+            throw new EntidadeNaoEncontradaException(franquiaId);
         }
         
         List<String> produtosEstoqueBaixo = new ArrayList<>();

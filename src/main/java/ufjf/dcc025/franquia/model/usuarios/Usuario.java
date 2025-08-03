@@ -22,28 +22,28 @@ public abstract class Usuario implements Identifiable {
 
     protected void setNome(String nome) {
         if (nome == null || nome.trim().isEmpty()) {
-            throw new IllegalArgumentException("Nome não pode ser vazio.");
+            throw new DadosInvalidosException("Nome não pode ser vazio.");
         }
         this.nome = nome.trim();
     }
 
     protected void setCpf(String cpf) {
         if (!validarCPF(cpf)) {
-            throw new IllegalArgumentException("CPF inválido.");
+            throw new DadosInvalidosException("CPF inválido.");
         }
         this.cpf = cpf.replaceAll("[^0-9]", "");
     }
 
     protected void setEmail(String email) {
         if (email == null || !Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9-]+(\\.[A-Za-z]{2,})+$").matcher(email).matches()) {
-            throw new IllegalArgumentException("E-mail inválido.");
+            throw new DadosInvalidosException("E-mail inválido.");
         }
         this.email = email;
     }
 
     protected void setSenha(String senha) {
         if (senha == null || senha.length() < 6) {
-            throw new IllegalArgumentException("Senha deve ter pelo menos 6 caracteres.");
+            throw new DadosInvalidosException("Senha deve ter pelo menos 6 caracteres.");
         }
         this.senha = senha;
     }

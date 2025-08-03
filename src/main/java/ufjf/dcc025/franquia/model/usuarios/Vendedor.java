@@ -13,6 +13,7 @@ import ufjf.dcc025.franquia.model.franquia.Franquia;
 import ufjf.dcc025.franquia.model.produtos.Produto;
 import ufjf.dcc025.franquia.model.pedidos.Pedido;
 import ufjf.dcc025.franquia.model.clientes.Cliente;
+import ufjf.dcc025.franquia.exception.*;
 
 public class Vendedor extends Usuario {
     private List<String> pedidosId;
@@ -44,14 +45,14 @@ public class Vendedor extends Usuario {
                 
                 Produto produto = this.franquia.buscarProduto(input);
                 if (produto == null) {
-                    throw new IllegalArgumentException("Produto não encontrado!");
+                    throw new EntidadeNaoEncontradaException(input);
                 }
                 
                 System.out.println("Digite a quantidade:");
                 int quantidade = Integer.parseInt(scanner.nextLine());
                 
                 if (quantidade <= 0) {
-                    throw new IllegalArgumentException("Quantidade deve ser maior que zero!");
+                    throw new DadosInvalidosException("Quantidade deve ser maior que zero!");
                 }
                 
                 produtos.put(produto, quantidade);
@@ -133,7 +134,7 @@ public class Vendedor extends Usuario {
     public Cliente editarCliente(String clienteId, String novoNome, String novoCpf, String novoEmail, String novoTelefone, String novoEndereco, EntityRepository<Cliente> clientes) {
         Cliente cliente = clientes.findById(clienteId).orElse(null);
         if (cliente == null) {
-            throw new IllegalArgumentException("Cliente com ID '" + clienteId + "' não encontrado.");
+            throw new EntidadeNaoEncontradaException(clienteId);
         }
         cliente.setNome(novoNome);
         cliente.setCpf(novoCpf);
