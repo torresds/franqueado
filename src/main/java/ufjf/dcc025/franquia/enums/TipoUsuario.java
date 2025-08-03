@@ -1,6 +1,12 @@
 package ufjf.dcc025.franquia.enums;
+
 public enum TipoUsuario {
-    VENDEDOR,
-    GERENTE,
-    DONO      
- }
+    DONO("D"), GERENTE("G"), VENDEDOR("V");
+    private final String prefixo;
+    TipoUsuario(String prefixo) {
+        this.prefixo = prefixo;
+    }
+    public String getPrefixo() {
+        return prefixo;
+    }
+}

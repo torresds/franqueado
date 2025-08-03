@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.swing.text.html.parser.Entity;
 
 import ufjf.dcc025.franquia.enums.TipoUsuario;
 import ufjf.dcc025.franquia.enums.EstadoPedido;
@@ -14,17 +13,16 @@ import ufjf.dcc025.franquia.model.franquia.Franquia;
 import ufjf.dcc025.franquia.model.produtos.Produto;
 import ufjf.dcc025.franquia.model.pedidos.Pedido;
 import ufjf.dcc025.franquia.model.clientes.Cliente;
+import ufjf.dcc025.franquia.exception.*;
 
 
 public class Gerente extends Usuario {
-	private static int gerenteId = 1;
     private Franquia franquia;
     private List<String> pedidosPendentesId;
     private List<Pedido> alteracoesPedidos;
 
     public Gerente(String nome, String cpf, String email, String senha, String franquiaId, EntityRepository<Franquia> franquiasValidas) {
         super(nome, cpf, email, senha);
-        gerenteId++;
         this.franquia = franquiasValidas.findById(franquiaId).orElse(null);
         this.pedidosPendentesId = new ArrayList<>();
         this.alteracoesPedidos = new ArrayList<>();
@@ -44,7 +42,11 @@ public class Gerente extends Usuario {
     }
     
     public void removerVendedor(String vendedorId, EntityRepository<Vendedor> vendedores) {
-    	franquia.removerVendedor(vendedores.findById(vendedorId).orElse(null));
+        Vendedor vendedor = vendedores.findById(vendedorId).orElse(null);
+        if (vendedor == null) {
+            throw new EntidadeNaoEncontradaException(vendedorId);
+        }
+        franquia.removerVendedor(vendedor);
         vendedores.delete(vendedorId);
     }
 
@@ -118,13 +120,16 @@ public class Gerente extends Usuario {
 
     public void aceitarAlteracaoPedido(Pedido pedido, EntityRepository<Pedido> pedidosValidos) {
         if (alteracoesPedidos.contains(pedido)) {
-            
-            if (pedido.getMetodoEntrega() == pedidosValidos.findById(pedido.getId()).orElse(null).getMetodoEntrega()) {
+            Pedido pedidoOriginal = pedidosValidos.findById(pedido.getId()).orElse(null);
+            if (pedidoOriginal == null) {
+                throw new EntidadeNaoEncontradaException(pedido.getId());
+            }
+            if (pedido.getMetodoEntrega() == pedidoOriginal.getMetodoEntrega()) {
                 Map<Produto, Integer> produtosnovos = pedido.getProdutosQuantidade();
-                Map<Produto, Integer> produtosantigos = pedidosValidos.findById(pedido.getId()).orElse(null).getProdutosQuantidade();
+                Map<Produto, Integer> produtosantigos = pedidoOriginal.getProdutosQuantidade();
                 for (Produto produto : produtosnovos.keySet()) {
                     if (!produtosantigos.containsKey(produto)) {
-                        franquia.atualizarEstoque(produto, produtosantigos.get(produto) - produtosnovos.get(produto));
+                        franquia.atualizarEstoque(produto, produtosantigos.getOrDefault(produto, 0) - produtosnovos.get(produto));
                     } else {
                         franquia.atualizarEstoque(produto, -produtosnovos.get(produto));
                     }
@@ -135,13 +140,10 @@ public class Gerente extends Usuario {
                     }
                 }
             }
-            
-            double valorAntigo = pedidosValidos.findById(pedido.getId()).orElse(null).getValorTotal();
+            double valorAntigo = pedidoOriginal.getValorTotal();
             double valorNovo = pedido.getValorTotal();
-            
             pedido.getVendedor().atualizarTotalVendas(valorNovo - valorAntigo);
             pedido.getFranquia().atualizarReceita(valorNovo - valorAntigo);
-        
             pedido.aprovarPedido();
             pedidosValidos.upsert(pedido);
             alteracoesPedidos.remove(pedido);
@@ -492,12 +494,6 @@ public class Gerente extends Usuario {
 
     public void setFranquia(Franquia franquia) {
         this.franquia = franquia;
-    }
-    
-    @Override
-    protected void setId() {
-    	String id = "G" + gerenteId;
-    	super.setId(id);
     }
 
     @Override

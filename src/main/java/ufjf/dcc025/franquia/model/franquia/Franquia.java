@@ -16,7 +16,6 @@ import ufjf.dcc025.franquia.model.usuarios.*;
 import ufjf.dcc025.franquia.model.clientes.Cliente;
 
 public class Franquia implements Identifiable {
-	private static int franquiaId = 1;
     private String id;
     private String nome;
     private String endereco;
@@ -230,8 +229,8 @@ public class Franquia implements Identifiable {
     }
     
     private void setId() {
-    	String id = "F" + franquiaId;
-    	this.id = id;
+        String newId = "F" + System.currentTimeMillis();
+        this.id = newId;
     }
     
     public String getNome() {

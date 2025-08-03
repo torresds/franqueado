@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import javax.swing.text.html.parser.Entity;
 
 import ufjf.dcc025.franquia.enums.TipoUsuario;
 import ufjf.dcc025.franquia.enums.TiposEntrega;
@@ -16,14 +15,12 @@ import ufjf.dcc025.franquia.model.pedidos.Pedido;
 import ufjf.dcc025.franquia.model.clientes.Cliente;
 
 public class Vendedor extends Usuario {
-	private static int vendedorId = 1;
     private List<String> pedidosId;
     private double totalVendas;
     private Franquia franquia;
 
     public Vendedor(String nome, String cpf, String email, String senha, Franquia franquia) {
         super(nome, cpf, email, senha);
-        vendedorId++;
         this.franquia = franquia;
         franquia.adicionarVendedor(this);
         this.pedidosId = new ArrayList<>();
@@ -151,12 +148,6 @@ public class Vendedor extends Usuario {
     //getters e setters
     public Franquia getFranquia() {
     	return this.franquia;
-    }
-    
-    @Override
-    protected void setId() {
-    	String id = "V" + vendedorId;
-    	super.setId(id);
     }
 
     @Override

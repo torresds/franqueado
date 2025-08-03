@@ -11,7 +11,6 @@ import ufjf.dcc025.franquia.persistence.Identifiable;
  * Classe que representa um cliente do sistema
  */
 public class Cliente implements Identifiable {
-	private static int clienteId = 1;
     private String id;
     private String nome;
     private String cpf;
@@ -103,7 +102,7 @@ public class Cliente implements Identifiable {
 
     // Setters
     private void setId() {
-    	String id = "C" + clienteId;
+    	String id = "C" + cpf;
     	this.id = id;
     }
     

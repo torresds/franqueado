@@ -95,10 +95,10 @@ public class Produto {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj) { return true; }
+        if (obj == null || getClass() != obj.getClass()) { return false; }
         Produto produto = (Produto) obj;
-        return nome.equals(produto.nome);
+        return Codigo.equals(produto.getCodigo());
     }
 
     @Override

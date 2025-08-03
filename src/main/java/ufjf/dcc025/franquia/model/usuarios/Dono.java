@@ -10,13 +10,12 @@ import java.util.stream.Collectors;
 import ufjf.dcc025.franquia.enums.TipoUsuario;
 import ufjf.dcc025.franquia.persistence.EntityRepository;
 import ufjf.dcc025.franquia.model.franquia.Franquia;
+import ufjf.dcc025.franquia.exception.*;
 
 public class Dono extends Usuario {
-	private static int donoId = 1;
     
     public Dono(String nome, String cpf, String email, String senha) {
     	super(nome, cpf, email, senha);
-    	donoId++;
     }
 
     //notificação caso uma unidade esteja sem gerente (feito)
@@ -38,9 +37,7 @@ public class Dono extends Usuario {
     		}
     	}
     	
-    	if (franquiasSemGerente.isEmpty()) {
-    		return null;
-    	}
+
     	return franquiasSemGerente;
     }
     public Franquia cadastrarFranquia(String nome, String endereco, String gerenteId, EntityRepository<Gerente> gerentesValidos, EntityRepository<Franquia> franquiasValidas) {
@@ -75,8 +72,13 @@ public class Dono extends Usuario {
     }
 
     public void removerGerente(EntityRepository<Gerente> gerentes, String idGerente) {
-    	Gerente gerente = gerentes.findById(idGerente).orElse(null);
-    	gerente.getFranquia().setGerente(null);
+        Gerente gerente = gerentes.findById(idGerente).orElse(null);
+        
+        if (gerente == null) {
+            throw new EntidadeNaoEncontradaException(idGerente);
+        }
+        
+        gerente.getFranquia().setGerente(null);
         gerentes.delete(idGerente);
     }
 
@@ -188,12 +190,6 @@ public class Dono extends Usuario {
                     (oldValue, newValue) -> oldValue,
                     LinkedHashMap::new
                 ));
-    }
-    
-    @Override
-    protected void setId() {
-    	String id = "D" + donoId;
-    	super.setId(id);
     }
 
     @Override
