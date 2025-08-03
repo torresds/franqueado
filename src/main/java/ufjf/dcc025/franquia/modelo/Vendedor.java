@@ -34,7 +34,7 @@ public class Vendedor extends Usuario {
         
         while (true) {
             try {
-                System.out.println("Digite o nome do produto (ou 'sair' para finalizar):");
+                System.out.println("Digite o codigo do produto (ou 'sair' para finalizar):");
                 String input = scanner.nextLine();
                 
                 if (input.equalsIgnoreCase("sair")) {
