@@ -1,5 +1,10 @@
 package ufjf.dcc025.franquia.modelo;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Classe que representa um cliente do sistema
  */
@@ -10,6 +15,7 @@ public class Cliente implements Identifiable {
     private String email;
     private String telefone;
     private String endereco;
+    private Map<String, List<String>> pedidosPorFranquia; // Mapeia ID da franquia para lista de IDs dos pedidos
 
     public Cliente(String id, String nome, String cpf, String email, String telefone, String endereco) {
         this.id = id;
@@ -18,6 +24,52 @@ public class Cliente implements Identifiable {
         this.email = email;
         this.telefone = telefone;
         this.endereco = endereco;
+        this.pedidosPorFranquia = new HashMap<>();
+    }
+
+    public void adicionarPedido(String pedidoId, String franquiaId) {
+        pedidosPorFranquia.computeIfAbsent(franquiaId, k -> new ArrayList<>());
+        List<String> pedidosDaFranquia = pedidosPorFranquia.get(franquiaId);
+        if (!pedidosDaFranquia.contains(pedidoId)) {
+            pedidosDaFranquia.add(pedidoId);
+        }
+    }
+  
+    public List<String> getPedidosDaFranquia(String franquiaId) {
+        List<String> pedidos = pedidosPorFranquia.get(franquiaId);
+        return pedidos != null ? new ArrayList<>(pedidos) : new ArrayList<>();
+    }
+
+    public List<String> getTodosPedidosId() {
+        List<String> todosPedidos = new ArrayList<>();
+        for (List<String> pedidos : pedidosPorFranquia.values()) {
+            todosPedidos.addAll(pedidos);
+        }
+        return todosPedidos;
+    }
+
+    public List<String> getFranquiasId() {
+        return new ArrayList<>(pedidosPorFranquia.keySet());
+    }
+
+    public Map<String, List<String>> getListaCompleta() {
+        Map<String, List<String>> copia = new HashMap<>();
+        for (Map.Entry<String, List<String>> entry : pedidosPorFranquia.entrySet()) {
+            copia.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+        }
+        return copia;
+    }
+
+    public int getTotalPedidosNaFranquia(String franquiaId) {
+        List<String> pedidos = pedidosPorFranquia.get(franquiaId);
+        return pedidos != null ? pedidos.size() : 0;
+    }
+
+
+    public int getTotalPedidos() {
+        return pedidosPorFranquia.values().stream()
+                .mapToInt(List::size)
+                .sum();
     }
 
     // Getters
@@ -65,6 +117,7 @@ public class Cliente implements Identifiable {
 
     @Override
     public String toString() {
-        return "Cliente: " + nome + " (ID: " + id + ")";
+        return String.format("Cliente: %s (ID: %s) | Pedidos: %d | Franquias visitadas: %d", 
+                           nome, id, getTotalPedidos(), getTotalFranquiasVisitadas());
     }
 }

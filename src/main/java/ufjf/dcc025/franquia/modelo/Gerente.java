@@ -1,6 +1,8 @@
 package ufjf.dcc025.franquia.modelo;
 import ufjf.dcc025.franquia.enums.TipoUsuario;
+import ufjf.dcc025.franquia.enums.EstadoPedido;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import javax.swing.text.html.parser.Entity;
@@ -10,22 +12,22 @@ public class Gerente extends Usuario {
     private List<String> pedidosPendentesId;
     private List<Pedido> alteracoesPedidos;
 
-    public Gerente(String nome, String cpf, String email, String senha, String id, Franquia franquia) {
-        super(nome, cpf, email, senha, id);
-        this.franquia = franquia;
+    public Gerente(String nome, String cpf, String email, String senha, String franquiaId, EntityRepository<Franquia> franquiasValidas) {
+        super(nome, cpf, email, senha);
+        this.franquia = franquiasValidas.findById(franquiaId);
         this.pedidosPendentesId = new ArrayList<>();
         this.alteracoesPedidos = new ArrayList<>();
     }
 
-    //Alterar informação de vendedores cadastrados
-    //Cadastrar, editar e remover produtos
-    //Ver produtos que estão com estoque baixo (fazer essa função na Franquia)
-    //Acessar relatórios da Franquia, histórico, clientes recorrentes, etc. (talvez fazer na Franquia tbm?)
+    //Alterar informação de vendedores cadastrados (feito)
+    //Cadastrar, editar e remover produtos (feito)
+    //Ver produtos que estão com estoque baixo (fazer essa função na Franquia) (fiz aq msm)
+    //Acessar relatórios da Franquia, histórico, clientes recorrentes, etc. (fiz os metodos na franquia e chamei aq)
 
     //------------ GERENCIAMENTO DE VENDEDORES ------------
 
-    public Vendedor cadastrarVendedor(String nome, String cpf, String email, String senha, String id, EntityRepository<Vendedor> vendedoresValidos) {
-        Vendedor novoVendedor = new Vendedor(nome, cpf, email, senha, id, this.franquia);
+    public Vendedor cadastrarVendedor(String nome, String cpf, String email, String senha, EntityRepository<Vendedor> vendedoresValidos) {
+        Vendedor novoVendedor = new Vendedor(nome, cpf, email, senha, this.franquia);
         vendedoresValidos.upsert(novoVendedor);
         return novoVendedor;
     }
@@ -34,11 +36,25 @@ public class Gerente extends Usuario {
         vendedores.delete(idVendedor);
     }
 
+    public Vendedor editarVendedor(String idVendedor, String novoNome, String novoCpf, String novoEmail, String novaSenha, EntityRepository<Vendedor> vendedoresValidos) {
+        Vendedor vendedor = vendedoresValidos.findById(idVendedor);
+        if (vendedor == null) {
+            throw new IllegalArgumentException("Vendedor com ID '" + idVendedor + "' não encontrado.");
+        }
+        vendedor.setNome(novoNome);
+        vendedor.setCpf(novoCpf);
+        vendedor.setEmail(novoEmail);
+        vendedor.setSenha(novaSenha);
+        vendedoresValidos.upsert(vendedor);
+        return vendedor;
+    }
+
     public List<Vendedor> listarVendedoresPorVendas(EntityRepository<Vendedor> vendedores) {
         List<Vendedor> listaVendedores = vendedores.findAll();
         listaVendedores.sort((v1, v2) -> Double.compare(v2.getTotalVendas(), v1.getTotalVendas()));
         return listaVendedores;
     }
+
 
     //------------ GERENCIAMENTO DE PEDIDOS ------------
 
@@ -71,7 +87,7 @@ public class Gerente extends Usuario {
         List<Pedido> pedidosPendentes = new ArrayList<>();
         for (String pedidoId : pedidosPendentesId) {
             Pedido pedido = pedidosValidos.findById(pedidoId);
-            if (pedido != null && "Pendente".equals(pedido.getStatus())) {
+            if (pedido != null && pedido.isPendente()) {
                 pedidosPendentes.add(pedido);
             }
         }
@@ -127,21 +143,349 @@ public class Gerente extends Usuario {
         }
     }
 
+   //------------ GERENCIAMENTO DE PRODUTOS ------------
+
+    public void criarNovoProduto(String nome, String descricao, double preco, int quantidadeInicial, EntityRepository<Franquia> todasFranquias) {
+        for (Franquia franquia : todasFranquias.findAll()) {
+            Produto produtoExistente = franquia.buscarProduto(nome);
+            if (produtoExistente != null) {
+                throw new IllegalArgumentException("Produto '" + nome + "' já existe no sistema.");
+            }
+        }
+        Produto novoProduto = new Produto(nome, descricao, preco);
+        
+        for (Franquia franquia : todasFranquias.findAll()) {
+            franquia.adicionarProduto(novoProduto, quantidadeInicial);
+        }
+    }
+
+
+    public void editarProduto(String nomeAtual, String novoNome, String novaDescricao,double novoPreco, EntityRepository<Franquia> todasFranquias) {
+        Produto produtoExistente = null;
+        for (Franquia franquia : todasFranquias.findAll()) {
+            produtoExistente = franquia.buscarProduto(nomeAtual);
+            if (produtoExistente != null) {
+                break;
+            }
+        }
+    
+        if (produtoExistente == null) {
+            throw new IllegalArgumentException("Produto '" + nomeAtual + "' não encontrado no sistema.");
+     }
+    
+        if (!nomeAtual.equals(novoNome)) {
+            for (Franquia franquia : todasFranquias.findAll()) {
+                Produto produtoComNovoNome = franquia.buscarProduto(novoNome);
+                if (produtoComNovoNome != null) {
+                    throw new IllegalArgumentException("Já existe um produto com o nome '" + novoNome + "'.");
+                }
+            }
+    }
+        Produto produtoAtualizado = new Produto(novoNome, novaDescricao, novoPreco);
+        
+        for (Franquia franquia : todasFranquias.findAll()) {
+            Produto produtoNaFranquia = franquia.buscarProduto(nomeAtual);
+            if (produtoNaFranquia != null) {
+            
+                int quantidadeAtual = franquia.getEstoque().get(produtoNaFranquia);
+                
+            
+                franquia.removerProduto(produtoNaFranquia);
+                
+            
+                franquia.adicionarProduto(produtoAtualizado, quantidadeAtual);
+            }
+        }
+    }
+
+
+    public void removerProdutoExistente(String nomeProduto, EntityRepository<Franquia> todasFranquias) {
+        boolean produtoEncontrado = false;
+        for (Franquia franquia : todasFranquias.findAll()) {
+            Produto produto = franquia.buscarProduto(nomeProduto);
+            if (produto != null) {
+                produtoEncontrado = true;
+                break;
+            }
+        }
+
+        if (!produtoEncontrado) {
+            throw new IllegalArgumentException("Produto '" + nomeProduto + "' não encontrado no sistema.");
+        }
+        
+        for (Franquia franquia : todasFranquias.findAll()) {
+            Produto produto = franquia.buscarProduto(nomeProduto);
+            if (produto != null) {
+                franquia.removerProduto(produto);
+            }
+        }
+    }
+
+
+    public void atualizarEstoqueProduto(String nomeProduto, int novaQuantidade, String franquiaId, EntityRepository<Franquia> todasFranquias) {
+        
+        Franquia franquiaEscolhida = todasFranquias.findById(franquiaId);
+        if (franquiaEscolhida == null) {
+            throw new IllegalArgumentException("Franquia com ID '" + franquiaId + "' não encontrada.");
+        }
+        
+        Produto produto = franquiaEscolhida.buscarProduto(nomeProduto);
+        if (produto == null) {
+            throw new IllegalArgumentException("Produto '" + nomeProduto + "' não encontrado na franquia '" + franquiaEscolhida.getNome() + "'.");
+        }
+        
+        if (novaQuantidade < 0) {
+            throw new IllegalArgumentException("Quantidade não pode ser negativa.");
+        }
+        
+        franquiaEscolhida.removerProduto(produto);
+        
+        if (novaQuantidade > 0) {
+            franquiaEscolhida.adicionarProduto(produto, novaQuantidade);
+        }
+    }
+
+    public List<String> listarProdutosEstoqueBaixo(String franquiaId, int limiteMinimo, EntityRepository<Franquia> todasFranquias) {
+
+        Franquia franquiaEscolhida = todasFranquias.findById(franquiaId);
+        if (franquiaEscolhida == null) {
+            throw new IllegalArgumentException("Franquia com ID '" + franquiaId + "' não encontrada.");
+        }
+        
+        List<String> produtosEstoqueBaixo = new ArrayList<>();
+        
+        for (Map.Entry<Produto, Integer> entry : franquiaEscolhida.getEstoque().entrySet()) {
+            if (entry.getValue() <= limiteMinimo) {
+                Produto produto = entry.getKey();
+                int quantidade = entry.getValue();
+                String detalhes = String.format("⚠️ %s - Estoque: %d unidades (Limite: %d)", 
+                                            produto.toString(), quantidade, limiteMinimo);
+                produtosEstoqueBaixo.add(detalhes);
+            }
+        }
+        
+        return produtosEstoqueBaixo;
+    }
+
+    
+     //------------ RELATÓRIOS ------------
+
+    public void visualizarRelatorioVendas(EntityRepository<Pedido> repositorioPedidos) {
+    List<String> pedidosId = this.franquia.gerarRelatorioVendas();
+    
+    System.out.println("📊 RELATÓRIO DE VENDAS - " + this.franquia.getNome().toUpperCase());
+    System.out.println("=" .repeat(60));
+    System.out.println("Total de pedidos: " + pedidosId.size());
+    System.out.printf("💰 Receita Acumulada: R$ %.2f%n", this.franquia.getReceita());
+    System.out.println("=" .repeat(60));
+    
+    if (pedidosId.isEmpty()) {
+        System.out.println("❌ Nenhum pedido encontrado.");
+        return;
+    }
+    
+    int pedidosAprovados = 0;
+    int pedidosCancelados = 0;
+    int pedidosPendentes = 0;
+    
+    for (String pedidoId : pedidosId) {
+        Pedido pedido = repositorioPedidos.findById(pedidoId);
+        if (pedido != null) {
+            System.out.printf("🛒 %s | %s | R$ %.2f | %s%n", 
+                            pedidoId, 
+                            pedido.getCliente().getNome(), 
+                            pedido.getValorTotal(),
+                            pedido.getStatus());
+            
+            if (pedido.isAprovado()) {
+                pedidosAprovados++;
+            } else if (pedido.isCancelado()) {
+                pedidosCancelados++;
+            } else if (pedido.isPendente()) {
+                pedidosPendentes++;
+            }
+        }
+    }
+    
+    System.out.println("=" .repeat(60));
+    System.out.printf("✅ Pedidos Aprovados: %d%n", pedidosAprovados);
+    System.out.printf("⏳ Pedidos Pendentes: %d%n", pedidosPendentes);
+    System.out.printf("❌ Pedidos Cancelados: %d%n", pedidosCancelados);
+    System.out.println("=" .repeat(60));
+}
+
+    public void visualizarRelatorioVendasPeriodo(Date dataInicio, Date dataFim,EntityRepository<Pedido> repositorioPedidos) {
+    List<String> pedidosId = this.franquia.gerarRelatorioVendasPeriodo(dataInicio, dataFim, repositorioPedidos);
+    
+    System.out.println("📅 RELATÓRIO DE VENDAS POR PERÍODO - " + this.franquia.getNome().toUpperCase());
+    System.out.printf("Período: %s até %s%n", dataInicio.toString(), dataFim.toString());
+    System.out.println("=" .repeat(60));
+    System.out.println("Total de pedidos no período: " + pedidosId.size());
+    System.out.println("=" .repeat(60));
+    
+    if (pedidosId.isEmpty()) {
+        System.out.println("❌ Nenhum pedido encontrado no período especificado.");
+        return;
+    }
+    
+    double receitaPeriodo = 0.0;
+    int pedidosAprovadosPeriodo = 0;
+    
+    for (String pedidoId : pedidosId) {
+        Pedido pedido = repositorioPedidos.findById(pedidoId);
+        if (pedido != null) {
+            System.out.printf("🛒 %s | %s | %s | R$ %.2f | %s%n", 
+                            pedidoId, 
+                            pedido.getData().toString(),
+                            pedido.getCliente().getNome(), 
+                            pedido.getValorTotal(),
+                            pedido.getStatus());
+            
+            if (pedido.isAprovado()) {
+                receitaPeriodo += pedido.getValorTotal();
+                pedidosAprovadosPeriodo++;
+            }
+        }
+    }
+    
+    System.out.println("=" .repeat(60));
+    System.out.printf("💰 Receita do Período: R$ %.2f%n", receitaPeriodo);
+    System.out.printf("✅ Pedidos Aprovados no Período: %d%n", pedidosAprovadosPeriodo);
+    double ticketMedio = pedidosAprovadosPeriodo > 0 ? receitaPeriodo / pedidosAprovadosPeriodo : 0;
+    System.out.printf("🎯 Ticket Médio: R$ %.2f%n", ticketMedio);
+    System.out.println("=" .repeat(60));
+    }
+
+    public void visualizarRelatorioClientesFrequencia(EntityRepository<Cliente> repositorioClientes) {
+    List<String> clientesRanking = this.franquia.gerarRelatorioClientesFrequencia(repositorioClientes);
+    
+    System.out.println("👥 RELATÓRIO DE CLIENTES POR FREQUÊNCIA - " + this.franquia.getNome().toUpperCase());
+    System.out.println("=" .repeat(60));
+    System.out.println("Total de clientes ativos: " + clientesRanking.size());
+    System.out.println("=" .repeat(60));
+    
+    if (clientesRanking.isEmpty()) {
+        System.out.println("❌ Nenhum cliente ativo encontrado.");
+        return;
+    }
+    
+    for (int i = 0; i < clientesRanking.size(); i++) {
+        String posicao = String.format("%2d°", i + 1);
+        String medalha = "";
+        
+        if (i == 0) medalha = "🥇";
+        else if (i == 1) medalha = "🥈";
+        else if (i == 2) medalha = "🥉";
+        else medalha = "👤";
+        
+        System.out.printf("%s %s %s%n", medalha, posicao, clientesRanking.get(i));
+    }
+    
+    System.out.println("=" .repeat(60));
+}
+
+    public void visualizarRelatorioEstoqueBaixo(int limiteMinimo) {
+    List<String> produtosEstoqueBaixo = listarProdutosEstoqueBaixo(this.franquia.getId(), limiteMinimo, null);
+    
+    System.out.println("⚠️ RELATÓRIO DE ESTOQUE BAIXO - " + this.franquia.getNome().toUpperCase());
+    System.out.println("=" .repeat(60));
+    System.out.println("Limite mínimo: " + limiteMinimo + " unidades");
+    System.out.println("Produtos com estoque baixo: " + produtosEstoqueBaixo.size());
+    System.out.println("=" .repeat(60));
+    
+    if (produtosEstoqueBaixo.isEmpty()) {
+        System.out.println("✅ Todos os produtos estão com estoque adequado!");
+        return;
+    }
+    
+    for (String produto : produtosEstoqueBaixo) {
+        System.out.println(produto);
+    }
+    
+    System.out.println("=" .repeat(60));
+}
+
+    public void visualizarEstoqueCompleto() {
+        Map<Produto, Integer> estoque = this.franquia.getEstoque();
+        
+        System.out.println("📦 ESTOQUE COMPLETO - " + this.franquia.getNome().toUpperCase());
+        System.out.println("=" .repeat(70));
+        System.out.println("Total de produtos: " + estoque.size());
+        System.out.println("=" .repeat(70));
+        
+        if (estoque.isEmpty()) {
+            System.out.println("❌ Nenhum produto em estoque.");
+            return;
+        }
+        
+        List<Map.Entry<Produto, Integer>> produtosOrdenados = estoque.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey((p1, p2) -> p1.getNome().compareToIgnoreCase(p2.getNome())))
+                .collect(Collectors.toList());
+        
+        double valorTotalEstoque = 0.0;
+        int totalUnidades = 0;
+        
+        System.out.printf("%-30s | %-10s | %-12s | %-15s%n", "PRODUTO", "QUANTIDADE", "PREÇO UNIT.", "VALOR TOTAL");
+        System.out.println("-" .repeat(70));
+
+        for (Map.Entry<Produto, Integer> entry : estoque.entrySet()) {
+            Produto produto = entry.getKey();
+            int quantidade = entry.getValue();
+            double precoUnitario = produto.getPreco();
+            double valorTotal = precoUnitario * quantidade;
+            
+            // Indicador visual de estoque
+            String indicador = "";
+            if (quantidade <= 5) {
+                indicador = "⚠️ "; // Estoque muito baixo
+            } else if (quantidade <= 10) {
+                indicador = "🟡 "; // Estoque baixo
+            } else {
+                indicador = "✅ "; // Estoque adequado
+            }
+            
+            System.out.printf("%s%-28s | %10d | R$ %9.2f | R$ %12.2f%n", 
+                            indicador, 
+                            produto.getNome(), 
+                            quantidade, 
+                            precoUnitario, 
+                            valorTotal);
+            
+            valorTotalEstoque += valorTotal;
+            totalUnidades += quantidade;
+        }
+        
+        System.out.println("-" .repeat(70));
+        System.out.printf("TOTAIS: %d produtos | %d unidades | R$ %.2f%n", 
+                         estoque.size(), totalUnidades, valorTotalEstoque);
+        System.out.println("=" .repeat(70));
+        
+        // Legenda
+        System.out.println("📊 LEGENDA:");
+        System.out.println("✅ Estoque adequado (> 10 unidades)");
+        System.out.println("🟡 Estoque baixo (6-10 unidades)");
+        System.out.println("⚠️ Estoque crítico (≤ 5 unidades)");
+        System.out.println("=" .repeat(70));
+    }
+
+
+    //getters e setters
+    public Franquia getFranquia() {
+        return this.franquia;
+    }
+
+    public void setFranquia(Franquia franquia) {
+        this.franquia = franquia;
+    }
 
     @Override
     public String toString() {
-        return "Gerente: " + getNome();
+        return "Gerente: " + getNome() + " | Franquia Gerenciada: " + franquia.getNome();
     }
 
+    @Override
     public TipoUsuario getTipoUsuario() {
         return TipoUsuario.GERENTE;
     }
-
-    public String getUnidadeFranquiaId() {
-        return unidadeFranquiaId;
-    }
-
-    public void setUnidadeFranquiaId(String unidadeFranquiaId) {
-        this.unidadeFranquiaId = unidadeFranquiaId;
-    }
 }
+

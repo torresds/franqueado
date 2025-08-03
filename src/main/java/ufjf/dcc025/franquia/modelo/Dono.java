@@ -5,9 +5,16 @@ import ufjf.dcc025.franquia.enums.TipoUsuario;
 
 public class Dono extends Usuario {
     
-    public Dono(String nome, String cpf, String email, String senha, String id) {
-        super(nome, cpf, email, senha, id);
+    public Dono(String nome, String cpf, String email, String senha) {
+        super(nome, cpf, email, senha);
     }
+
+    //notificação caso uma unidade esteja sem gerente
+    //botar função de atualizar informações de franquia e gerente, se necessário (feito)
+    //botar função de ver desempenho de franquias o faturamento bruto, o número total de pedidos e o ticket médio (feito)
+    //função de ver ranking de vendedores por franquia (feito, feito para todas as franquias também)
+    //Adicionar logica de colocar a franquia no gerente (???)
+    
 
     //------------ GERENCIAMENTO DE FRANQUIAS ------------
 
@@ -22,11 +29,23 @@ public class Dono extends Usuario {
     public List<Franquia> listarFranquias(EntityRepository<Franquia> franquias) {
         return franquias.findAll();
     }
+
+    public void atualizarFranquia(String id, String nome, String endereco, EntityRepository<Franquia> franquias) {
+        Franquia franquia = franquias.findbyId(id);
+        if (franquia != null) {
+            franquia.setNome(nome);
+            franquia.setEndereco(endereco);
+            franquias.upsert(franquia);
+        } else {
+            throw new IllegalArgumentException("Franquia não encontrada.");
+        }
+    }
  
     //------------ GERENCIAMENTO DE USUÁRIOS ------------
 
-    public Gerente cadastrarGerente(String nome, String cpf, String email, String senha, String id, EntityRepository<Gerente> gerentesValidos) {
-        Gerente novoGerente = new Gerente(nome, cpf, email, senha, id);
+    public Gerente cadastrarGerente(String nome, String cpf, String email, String senha, EntityRepository<Gerente> gerentesValidos, String franquiaId, EntityRepository<Franquia> franquiasValidas) {
+ 
+        Gerente novoGerente = new Gerente(nome, cpf, email, senha, franquiaId, franquiasValidas);
         gerentesValidos.upsert(novoGerente);
         return novoGerente;
     }
@@ -39,11 +58,101 @@ public class Dono extends Usuario {
         return gerentes.findAll();
     }
 
-    //notificação caso uma unidade esteja sem gerente
-    //botar função de atualizar informações de franquia e gerente, se necessário
-    //botar função de ver desempenho de franquias o faturamento bruto, o número total de pedidos e o ticket médio
-    //função de ver ranking de vendedores por franquia
-    //Adicionar logica de colocar a franquia no gerente
+    public void atualizarGerente(String id, String nome, String cpf, String email, String senha, EntityRepository<Gerente> gerentes) {
+        Gerente gerente = gerentes.findbyId(id);
+        if (gerente != null) {
+            gerente.setNome(nome);
+            gerente.setCpf(cpf);
+            gerente.setEmail(email);
+            gerente.setSenha(senha);
+            gerentes.upsert(gerente);
+        } else {
+            throw new IllegalArgumentException("Gerente não encontrado.");
+        }
+    }
+
+    public void SetGerenteFranquia(String franquiaId, String gerenteId, EntityRepository<Franquia> franquias, EntityRepository<Gerente> gerentes) {
+        Franquia franquia = franquias.findbyId(franquiaId);
+        Gerente gerente = gerentes.findbyId(gerenteId);
+        if (franquia != null && gerente != null) {
+            franquia.setGerente(gerente);
+            franquias.upsert(franquia);
+        } else {
+            throw new IllegalArgumentException("Franquia ou Gerente não encontrado.");
+        }
+    }
+
+    //------------ GERENCIAMENTO DE DESEMPENHO ------------
+   
+    public double calcularFaturamentoBruto(EntityRepository<Franquia> franquias) {
+        double faturamentoTotal = 0.0;
+        for (Franquia franquia : franquias.findAll()) {
+            faturamentoTotal += franquia.getReceita();
+        }
+        return faturamentoTotal;
+    }
+   
+    public int calcularTotalPedidos(EntityRepository<Franquia> franquias) {
+        int totalPedidos = 0;
+        for (Franquia franquia : franquias.findAll()) {
+            totalPedidos += franquia.getTotalPedidos();
+        }
+        return totalPedidos;
+    }
+    
+    public double calcularTicketMedio(EntityRepository<Franquia> franquias) {
+        int totalPedidos = calcularTotalPedidos(franquias);
+        double faturamentoBruto = calcularFaturamentoBruto(franquias);
+        return totalPedidos > 0 ? faturamentoBruto / totalPedidos : 0.0;
+    }
+
+    public List<String> rankingVendedores(EntityRepository<Franquia> franquias, EntityRepository<Vendedor> vendedores) {
+        Map<String, Double> ranking = new HashMap<>();
+        for (Franquia franquia : franquias.findAll()) {
+            for (Vendedor vendedor : franquia.getVendedores()) {
+                ranking.put(vendedor.getId(), vendedor.getTotalVendas());
+            }
+        }
+        return ranking.entrySet().stream()
+                .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+    }
+
+    public List<String> rankingVendedoresPorFranquia(EntityRepository<Franquia> franquias, EntityRepository<Vendedor> vendedores, String franquiaId) {
+        Franquia franquia = franquias.findbyId(franquiaId);
+        if (franquia == null) {
+            throw new IllegalArgumentException("Franquia não encontrada.");
+        }
+        
+        Map<String, Double> ranking = new HashMap<>();
+        for (Vendedor vendedor : franquia.getVendedores()) {
+            ranking.put(vendedor.getId(), vendedor.getTotalVendas());
+        }
+        
+        return ranking.entrySet().stream()
+                .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());  
+
+    }
+
+    public Map<String,Double> listarFranquiasPorDesempenho(EntityRepository<Franquia> franquias) {
+        Map<String, Double> desempenho = new HashMap<>();
+        
+        for (Franquia franquia : franquias.findAll()) {
+            desempenho.put(franquia.getNome(), franquia.getReceita());
+        }
+        
+        return desempenho.entrySet().stream()
+                .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                .collect(Collectors.toMap(
+                    Map.Entry::getKey,
+                    Map.Entry::getValue,
+                    (oldValue, newValue) -> oldValue,
+                    LinkedHashMap::new
+                ));
+    }
     
 
     @Override

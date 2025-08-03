@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import ufjf.dcc025.franquia.enums.TiposPagamento;
 import ufjf.dcc025.franquia.enums.TiposEntrega;
+import ufjf.dcc025.franquia.enums.EstadoPedido;
 
 public class Pedido implements Identifiable {
 
@@ -17,7 +18,7 @@ public class Pedido implements Identifiable {
     private TiposEntrega metodoEntrega;
     private double valorTotal;
     private double valorFrete;
-    private String status; // "Pendente", "Aprovado", "Cancelado"
+    private EstadoPedido status;
 
     public Pedido(Cliente cliente, Map<Produto, Integer> produtos, Franquia franquia, TiposPagamento formaPagamento, TiposEntrega metodoEntrega, String id, Vendedor vendedor) {
         this.id = id;
@@ -30,7 +31,7 @@ public class Pedido implements Identifiable {
         this.metodoEntrega = metodoEntrega;
         this.valorFrete = calcularFrete();
         this.valorTotal = calcularValorTotal();
-        this.status = "Pendente";
+        this.status = EstadoPedido.PENDENTE;
     }
 
     private double calcularValorTotal() {
@@ -40,13 +41,19 @@ public class Pedido implements Identifiable {
         return valorTotal + valorFrete;
     }
 
-     private double calcularFrete() {
-        if (metodoEntrega == TiposEntrega.RETIRADA) {
-            return 0.0;
-        } else {
-            return 15; 
-        }
+     private double calcularFrete() { 
+    if (metodoEntrega == TiposEntrega.RETIRADA) {
+        return 0.0;
+    }    
+    double valorProdutos = produtosQuantidade.entrySet().stream()
+            .mapToDouble(entry -> entry.getKey().getPreco() * entry.getValue())
+            .sum();
+    
+    if (valorProdutos >= 500.0) {
+        return 0.0;
     }
+    return 15.0;
+}
 
     public void adicionarProduto(Produto produto, int quantidade) {
         produtosQuantidade.merge(produto, quantidade, Integer::sum);
@@ -69,7 +76,7 @@ public class Pedido implements Identifiable {
     public Date getData() { return data; }
     public Cliente getCliente() { return cliente; }
     public Vendedor getVendedor() { return vendedor; }
-    public String getStatus() { return status; }
+    public EstadoPedido getStatus() { return status; }
     public Franquia getFranquia() { return franquia; }
     
     // Getters de produtos e pagamento
@@ -84,8 +91,13 @@ public class Pedido implements Identifiable {
     public double getValorTotal() { return valorTotal; }
     
     // Métodos de controle do pedido
-    public void aprovarPedido() { this.status = "Aprovado"; }
-    public void cancelarPedido() { this.status = "Cancelado"; }
+    public void aprovarPedido() { this.status = EstadoPedido.APROVADO; }
+    public void cancelarPedido() { this.status = EstadoPedido.CANCELADO; }
+
+    // Métodos utilitários para verificar status
+    public boolean isPendente() { return status == EstadoPedido.PENDENTE; }
+    public boolean isAprovado() { return status == EstadoPedido.APROVADO; }
+    public boolean isCancelado() { return status == EstadoPedido.CANCELADO; }
 
     //Setters
     public void setMetodoEntrega (TiposEntrega metodoEntrega){

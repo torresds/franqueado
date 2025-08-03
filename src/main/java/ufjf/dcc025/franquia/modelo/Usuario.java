@@ -13,12 +13,12 @@ public abstract class Usuario implements Identifiable {
 
    
 
-    public Usuario(String nome, String cpf, String email, String senha, String id) {
+    public Usuario(String nome, String cpf, String email, String senha) {
         setNome(nome);
         setCpf(cpf);
         setEmail(email);
         setSenha(senha);
-        setId(id);
+        setId();
     }
 
     // Métodos de validação (exigidos pelo PDF - Seção 2: "validação dos dados de entrada")
@@ -51,11 +51,11 @@ public abstract class Usuario implements Identifiable {
     }
 
     private void setId(String id) {
+        //colocar metodo de criar o id aqui
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("ID não pode ser vazio.");
         }
         this.id = id;
-        //verificar se o ID já existe no repositório (não implementado aqui)
     }
 
     private boolean validarCPF(String cpf) {

@@ -16,8 +16,8 @@ public class Vendedor extends Usuario {
     private double totalVendas;
     private Franquia franquia;
 
-    public Vendedor(String nome, String cpf, String email, String senha, String id, Franquia franquia) {
-        super(nome, cpf, email, senha, id);
+    public Vendedor(String nome, String cpf, String email, String senha, Franquia franquia) {
+        super(nome, cpf, email, senha);
         this.franquia = franquia;
         this.pedidosId = new ArrayList<>();
         this.totalVendas = 0;
@@ -67,10 +67,11 @@ public class Vendedor extends Usuario {
         pedidosValidos.upsert(novoPedido);
         this.franquia.getGerente().adicionarPedidoPendente(pedidoId);
         this.franquia.adicionarPedido(pedidoId);
+        
+        cliente.adicionarPedido(pedidoId, this.franquia.getId());
+        
         return novoPedido;
     }
-
-    //cancelar pedido, não sei como fazer sem precisar criar mais uma lista pro gerente
 
     public Pedido alterarPedido(String pedidoId, EntityRepository<Pedido> pedidosValidos) {
         Pedido pedidoOriginal = pedidosValidos.findById(pedidoId);
@@ -108,6 +109,7 @@ public class Vendedor extends Usuario {
     	for (String id : pedidosId) {
     		listaPedidos.add(pedidosValidos.findbyId(id));
     	}
+    	return listaPedidos;
     }
 
     @Override
