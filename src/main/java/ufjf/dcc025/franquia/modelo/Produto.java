@@ -2,17 +2,23 @@ package ufjf.dcc025.franquia.modelo;
 
 public class Produto {
 
+	private String Codigo;
     private String nome;
     private String descricao;
     private double preco;
 
-    public Produto(String nome, String descricao, double preco) {
+    public Produto(String codigo, String nome, String descricao, double preco) {
+    	setCodigo(codigo);
         setNome(nome);
         setDescricao(descricao);
         setPreco(preco);
     }
 
     // Métodos de validação e setters privados
+    private void setCodigo(String codigo) {
+    	this.Codigo = codigo;
+    }
+    
     private void setNome(String nome) {
         if (nome == null || nome.trim().isEmpty()) {
             throw new IllegalArgumentException("Nome do produto não pode ser vazio.");
@@ -77,6 +83,7 @@ public class Produto {
     }
 
     // Getters
+    public String getCodigo() { return Codigo; }
     public String getNome() { return nome; }
     public String getDescricao() { return descricao; }
     public double getPreco() { return preco; }

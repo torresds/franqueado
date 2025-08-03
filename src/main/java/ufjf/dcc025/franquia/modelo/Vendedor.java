@@ -12,17 +12,22 @@ import ufjf.dcc025.franquia.enums.TiposEntrega;
 import ufjf.dcc025.franquia.enums.TiposPagamento;
 
 public class Vendedor extends Usuario {
+	private static int vendedorId = 1;
     private List<String> pedidosId;
     private double totalVendas;
     private Franquia franquia;
 
     public Vendedor(String nome, String cpf, String email, String senha, Franquia franquia) {
         super(nome, cpf, email, senha);
+        vendedorId++;
         this.franquia = franquia;
+        franquia.adicionarVendedor(this);
         this.pedidosId = new ArrayList<>();
         this.totalVendas = 0;
     }
 
+    //------------ GERENCIAMENTO DE PEDIDOS ------------
+    
     public Map<Produto, Integer> criarPedido() {
         Map<Produto, Integer> produtos = new HashMap<>();
         Scanner scanner = new Scanner(System.in);
@@ -110,6 +115,40 @@ public class Vendedor extends Usuario {
     		listaPedidos.add(pedidosValidos.findbyId(id));
     	}
     	return listaPedidos;
+    }
+    
+    //------------ GERENCIAMENTO DE CLIENTES ------------
+    
+    public Cliente cadastrarCliente(String nome, String cpf, String email, String telefone, String endereco, EntityRepository<Cliente> clientes) {
+        Cliente novoCliente = new Cliente(nome, cpf, email, telefone, endereco);
+        clientes.upsert(novoCliente);
+        return novoCliente;
+    }
+    
+    public void removerCliente(String clienteId, EntityRepository<Cliente> clientes) {
+        clientes.delete(clienteId);
+    }
+
+    public Cliente editarCliente(String clienteId, String novoNome, String novoCpf, String novoEmail, String novoTelefone, String novoEndereco, EntityRepository<Cliente> clientes) {
+        Cliente cliente = clientes.findById(clienteId);
+        if (cliente == null) {
+            throw new IllegalArgumentException("Cliente com ID '" + clienteId + "' não encontrado.");
+        }
+        cliente.setNome(novoNome);
+        cliente.setCpf(novoCpf);
+        cliente.setEmail(novoEmail);
+        cliente.setTelefone(novoTelefone);
+        cliente.setEndereco(novoEndereco);
+        
+        return cliente;
+    }
+    
+    
+    //getters e setters
+    @Override
+    protected void setId() {
+    	String id = "V" + vendedorId;
+    	super.setId(id);
     }
 
     @Override

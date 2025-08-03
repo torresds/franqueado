@@ -9,6 +9,7 @@ import java.util.Map;
  * Classe que representa um cliente do sistema
  */
 public class Cliente implements Identifiable {
+	private static int clienteId = 1;
     private String id;
     private String nome;
     private String cpf;
@@ -17,8 +18,8 @@ public class Cliente implements Identifiable {
     private String endereco;
     private Map<String, List<String>> pedidosPorFranquia; // Mapeia ID da franquia para lista de IDs dos pedidos
 
-    public Cliente(String id, String nome, String cpf, String email, String telefone, String endereco) {
-        this.id = id;
+    public Cliente(String nome, String cpf, String email, String telefone, String endereco) {
+        setId();
         this.nome = nome;
         this.cpf = cpf;
         this.email = email;
@@ -99,8 +100,17 @@ public class Cliente implements Identifiable {
     }
 
     // Setters
+    private void setId() {
+    	String id = "C" + clienteId;
+    	this.id = id;
+    }
+    
     public void setNome(String nome) {
         this.nome = nome;
+    }
+    
+    public void setCpf(String cpf) {
+    	this.cpf = cpf;
     }
 
     public void setEmail(String email) {

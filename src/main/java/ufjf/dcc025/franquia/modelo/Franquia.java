@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import java.util.HashMap;
 
 public class Franquia implements Identifiable {
+	private static int franquiaId = 1;
     private final String id;
     private String nome;
     private String endereco;
@@ -20,9 +21,9 @@ public class Franquia implements Identifiable {
         this.nome = nome;
         setId();
         this.endereco = endereco;
-        setGerente(gerente, gerentesValidos);
+        setGerente(gerenteId, gerentesValidos);
         this.vendedores = new ArrayList<>();
-        this.vendasId = new ArrayList<>();
+        this.pedidosId = new ArrayList<>();
         this.estoque = new HashMap<>();
         this.receita = 0.0;
     }
@@ -107,9 +108,9 @@ public class Franquia implements Identifiable {
         }
     }
 
-    public Produto buscarProduto(String nome) {
+    public Produto buscarProduto(String codigo) {
         for (Produto produto : estoque.keySet()) {
-            if (produto.getNome().equalsIgnoreCase(nome)) {
+            if (produto.getCodigo().equals(codigo)) {
                 return produto;
             }
         }
@@ -154,23 +155,23 @@ public class Franquia implements Identifiable {
     }
 
     public List<String> gerarRelatorioClientesFrequencia(EntityRepository<Cliente> repositorioClientes) {
-    Map<Cliente, Integer> clientesComPedidos = new HashMap<>();
-    List<Cliente> todosClientes = repositorioClientes.findAll();
-    
-    for (Cliente cliente : todosClientes) {
-        int totalPedidosNaFranquia = cliente.getTotalPedidosNaFranquia(this.id);
-        if (totalPedidosNaFranquia > 0) {
-            clientesComPedidos.put(cliente, totalPedidosNaFranquia);
-        }
-    }
-    
-    return clientesComPedidos.entrySet().stream()
-            .sorted(Map.Entry.<Cliente, Integer>comparingByValue().reversed())
-            .map(entry -> String.format("%s - %d pedidos", 
-                                      entry.getKey().getNome(), 
-                                      entry.getValue()))
-            .collect(Collectors.toList());
-}
+	    Map<Cliente, Integer> clientesComPedidos = new HashMap<>();
+	    List<Cliente> todosClientes = repositorioClientes.findAll();
+	    
+	    for (Cliente cliente : todosClientes) {
+	        int totalPedidosNaFranquia = cliente.getTotalPedidosNaFranquia(this.id);
+	        if (totalPedidosNaFranquia > 0) {
+	            clientesComPedidos.put(cliente, totalPedidosNaFranquia);
+	        }
+	    }
+	    
+	    return clientesComPedidos.entrySet().stream()
+	            .sorted(Map.Entry.<Cliente, Integer>comparingByValue().reversed())
+	            .map(entry -> String.format("%s - %d pedidos", 
+	                                      entry.getKey().getNome(), 
+	                                      entry.getValue()))
+	            .collect(Collectors.toList());
+	}
 
     public List<String> gerarRelatorioProdutosMaisVendidos(EntityRepository<Pedido> repositorioPedidos) {
         
@@ -214,12 +215,10 @@ public class Franquia implements Identifiable {
     public String getId() {
         return id;
     }
-    private void setId(String id) {
-        //colocar metodo de criar o id aqui
-        if (id == null || id.trim().isEmpty()) {
-            throw new IllegalArgumentException("ID não pode ser vazio.");
-        }
-        this.id = id;
+    
+    private void setId() {
+    	String id = "F" + franquiaId;
+    	this.id = id;
     }
     
     public String getNome() {
@@ -227,6 +226,10 @@ public class Franquia implements Identifiable {
     }
     public String getEndereco() { 
         return endereco; 
+    }
+    
+    public void setGerente(Gerente gerente) {
+    	this.gerente = gerente;
     }
 
     public void setGerente(String gerenteId, EntityRepository<Gerente> gerentesValidos) {

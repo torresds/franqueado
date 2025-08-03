@@ -22,40 +22,38 @@ public abstract class Usuario implements Identifiable {
     }
 
     // Métodos de validação (exigidos pelo PDF - Seção 2: "validação dos dados de entrada")
-    private void setNome(String nome) {
+    protected void setNome(String nome) {
         if (nome == null ) {
             throw new IllegalArgumentException("Nome não pode ser vazio.");
         }
         this.nome = nome.trim();
     }
 
-    private void setCpf(String cpf) {
+    protected void setCpf(String cpf) {
         if (!validarCPF(cpf)) {
             throw new IllegalArgumentException("CPF inválido.");
         }
         this.cpf = cpf.replaceAll("[^0-9]", "");
     }
 
-    private void setEmail(String email) {
+    protected void setEmail(String email) {
         if (email == null || !Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9-]+(\\.[A-Za-z]{2,})+$").matcher(email).matches()) {
             throw new IllegalArgumentException("E-mail inválido.");
         }
         this.email = email;
     }
 
-    private void setSenha(String senha) {
+    protected void setSenha(String senha) {
         if (senha == null || senha.length() < 6) {
             throw new IllegalArgumentException("Senha deve ter pelo menos 6 caracteres.");
         }
         this.senha = senha;
     }
 
-    private void setId(String id) {
-        //colocar metodo de criar o id aqui
-        if (id == null || id.trim().isEmpty()) {
-            throw new IllegalArgumentException("ID não pode ser vazio.");
-        }
-        this.id = id;
+    protected abstract void setId();
+    
+    protected void setId(String Id) {
+    	this.id = Id;
     }
 
     private boolean validarCPF(String cpf) {

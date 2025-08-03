@@ -1,25 +1,42 @@
 package ufjf.dcc025.franquia.modelo;
 import java.util.List;
+import java.util.ArrayList;
 
 import ufjf.dcc025.franquia.enums.TipoUsuario;
 
 public class Dono extends Usuario {
+	private static int donoId = 1;
     
     public Dono(String nome, String cpf, String email, String senha) {
-        super(nome, cpf, email, senha);
+    	super(nome, cpf, email, senha);
+    	donoId++;
     }
 
-    //notificação caso uma unidade esteja sem gerente
+    //notificação caso uma unidade esteja sem gerente (feito)
     //botar função de atualizar informações de franquia e gerente, se necessário (feito)
     //botar função de ver desempenho de franquias o faturamento bruto, o número total de pedidos e o ticket médio (feito)
     //função de ver ranking de vendedores por franquia (feito, feito para todas as franquias também)
-    //Adicionar logica de colocar a franquia no gerente (???)
+    //Adicionar logica de colocar a franquia no gerente (???) (nem eu lembro oq eu quis dizer com isso)
     
 
     //------------ GERENCIAMENTO DE FRANQUIAS ------------
 
-    public Franquia cadastrarFranquia(String nome, String endereco, String id, String gerenteId, EntityRepository<Gerente> gerentesValidos, EntityRepository<Franquia> franquiasValidas) {
-        Franquia novaFranquia = new Franquia(nome, endereco, id, gerenteId, gerentesValidos);
+    public List<Franquia> checarFranquias(EntityRepository<Franquia> todasFranquias){
+    	List<Franquia> franquiasSemGerente = new ArrayList<>();
+    	
+    	for (Franquia franquia : todasFranquias) {
+    		if (franquia.getGerente().equals(null)) {
+    			franquiasSemGerente.add(franquia);
+    		}
+    	}
+    	
+    	if (franquiasSemGerente.isEmpty()) {
+    		return null;
+    	}
+    	return franquiasSemGerente;
+    }
+    public Franquia cadastrarFranquia(String nome, String endereco, String gerenteId, EntityRepository<Gerente> gerentesValidos, EntityRepository<Franquia> franquiasValidas) {
+        Franquia novaFranquia = new Franquia(nome, endereco, gerenteId, gerentesValidos);
         franquiasValidas.upsert(novaFranquia);
         return novaFranquia;
     }
@@ -44,13 +61,14 @@ public class Dono extends Usuario {
     //------------ GERENCIAMENTO DE USUÁRIOS ------------
 
     public Gerente cadastrarGerente(String nome, String cpf, String email, String senha, EntityRepository<Gerente> gerentesValidos, String franquiaId, EntityRepository<Franquia> franquiasValidas) {
- 
         Gerente novoGerente = new Gerente(nome, cpf, email, senha, franquiaId, franquiasValidas);
         gerentesValidos.upsert(novoGerente);
         return novoGerente;
     }
 
     public void removerGerente(EntityRepository<Gerente> gerentes, String idGerente) {
+    	Gerente gerente = gerentes.findById(idGerente);
+    	gerente.getFranquia().setGerente(null);
         gerentes.delete(idGerente);
     }
 
@@ -58,14 +76,24 @@ public class Dono extends Usuario {
         return gerentes.findAll();
     }
 
-    public void atualizarGerente(String id, String nome, String cpf, String email, String senha, EntityRepository<Gerente> gerentes) {
-        Gerente gerente = gerentes.findbyId(id);
+    public void atualizarGerente(String id, String nome, String cpf, String email, String senha, String franquiaId, EntityRepository<Gerente> gerentes, EntityRepository<Franquia> franquias) {
+    	Gerente gerente = gerentes.findbyId(id);
         if (gerente != null) {
+        	Franquia novaFranquia = franquias.findById(franquiaId);
+        	if (!gerente.getFranquia().equals(novaFranquia)) {
+        		if (!novaFranquia.getGerente().equals(null)) {
+        			throw new IllegalArgumentException("Franquia já tem Gerente.");
+        		}
+        		gerente.getFranquia().setGerente(null);
+        		novaFranquia.setGerente(gerente);
+        	}
+        	
             gerente.setNome(nome);
             gerente.setCpf(cpf);
             gerente.setEmail(email);
             gerente.setSenha(senha);
-            gerentes.upsert(gerente);
+            gerente.setFranquia(novaFranquia);
+        	
         } else {
             throw new IllegalArgumentException("Gerente não encontrado.");
         }
@@ -154,6 +182,11 @@ public class Dono extends Usuario {
                 ));
     }
     
+    @Override
+    protected void setId() {
+    	String id = "D" + donoId;
+    	super.setId(id);
+    }
 
     @Override
     public String toString() {

@@ -8,12 +8,14 @@ import java.util.Map;
 import javax.swing.text.html.parser.Entity;
 
 public class Gerente extends Usuario {
+	private static int gerenteId = 1;
     private Franquia franquia;
     private List<String> pedidosPendentesId;
     private List<Pedido> alteracoesPedidos;
 
     public Gerente(String nome, String cpf, String email, String senha, String franquiaId, EntityRepository<Franquia> franquiasValidas) {
         super(nome, cpf, email, senha);
+        gerenteId++;
         this.franquia = franquiasValidas.findById(franquiaId);
         this.pedidosPendentesId = new ArrayList<>();
         this.alteracoesPedidos = new ArrayList<>();
@@ -32,8 +34,9 @@ public class Gerente extends Usuario {
         return novoVendedor;
     }
     
-    public void removerVendedor(String idVendedor, EntityRepository<Vendedor> vendedores) {
-        vendedores.delete(idVendedor);
+    public void removerVendedor(String vendedorId, EntityRepository<Vendedor> vendedores) {
+    	franquia.removerVendedor(vendedores.findById(vendedorId));
+        vendedores.delete(vendedorId);
     }
 
     public Vendedor editarVendedor(String idVendedor, String novoNome, String novoCpf, String novoEmail, String novaSenha, EntityRepository<Vendedor> vendedoresValidos) {
@@ -145,35 +148,36 @@ public class Gerente extends Usuario {
 
    //------------ GERENCIAMENTO DE PRODUTOS ------------
 
-    public void criarNovoProduto(String nome, String descricao, double preco, int quantidadeInicial, EntityRepository<Franquia> todasFranquias) {
+    public void criarNovoProduto(String codigo, String nome, String descricao, double preco, int quantidadeInicial, EntityRepository<Franquia> todasFranquias) {
         for (Franquia franquia : todasFranquias.findAll()) {
-            Produto produtoExistente = franquia.buscarProduto(nome);
+            Produto produtoExistente = franquia.buscarProduto(codigo);
             if (produtoExistente != null) {
-                throw new IllegalArgumentException("Produto '" + nome + "' já existe no sistema.");
+                throw new IllegalArgumentException("Codigo '" + codigo + "' já cadastrado no sistema.");
             }
         }
-        Produto novoProduto = new Produto(nome, descricao, preco);
+        Produto novoProduto = new Produto(codigo, nome, descricao, preco);
         
         for (Franquia franquia : todasFranquias.findAll()) {
-            franquia.adicionarProduto(novoProduto, quantidadeInicial);
+            franquia.adicionarProduto(novoProduto, 0);
         }
-    }
+        this.getFranquia().atualizarEstoque(novoProduto, quantidadeInicial);
+        }
 
 
-    public void editarProduto(String nomeAtual, String novoNome, String novaDescricao,double novoPreco, EntityRepository<Franquia> todasFranquias) {
+    public void editarProduto(String codigo, String novoNome, String novaDescricao,double novoPreco, EntityRepository<Franquia> todasFranquias) {
         Produto produtoExistente = null;
         for (Franquia franquia : todasFranquias.findAll()) {
-            produtoExistente = franquia.buscarProduto(nomeAtual);
+            produtoExistente = franquia.buscarProduto(codigo);
             if (produtoExistente != null) {
                 break;
             }
         }
     
         if (produtoExistente == null) {
-            throw new IllegalArgumentException("Produto '" + nomeAtual + "' não encontrado no sistema.");
+            throw new IllegalArgumentException("Codigo '" + codigo + "' não encontrado no sistema.");
      }
-    
-        if (!nomeAtual.equals(novoNome)) {
+    /*
+        if (!nomeAntigo.equals(novoNome)) {
             for (Franquia franquia : todasFranquias.findAll()) {
                 Produto produtoComNovoNome = franquia.buscarProduto(novoNome);
                 if (produtoComNovoNome != null) {
@@ -181,10 +185,11 @@ public class Gerente extends Usuario {
                 }
             }
     }
-        Produto produtoAtualizado = new Produto(novoNome, novaDescricao, novoPreco);
+    */
+        Produto produtoAtualizado = new Produto(codigo, novoNome, novaDescricao, novoPreco);
         
         for (Franquia franquia : todasFranquias.findAll()) {
-            Produto produtoNaFranquia = franquia.buscarProduto(nomeAtual);
+            Produto produtoNaFranquia = franquia.buscarProduto(codigo);
             if (produtoNaFranquia != null) {
             
                 int quantidadeAtual = franquia.getEstoque().get(produtoNaFranquia);
@@ -199,10 +204,10 @@ public class Gerente extends Usuario {
     }
 
 
-    public void removerProdutoExistente(String nomeProduto, EntityRepository<Franquia> todasFranquias) {
+    public void removerProdutoExistente(String codigoProduto, EntityRepository<Franquia> todasFranquias) {
         boolean produtoEncontrado = false;
         for (Franquia franquia : todasFranquias.findAll()) {
-            Produto produto = franquia.buscarProduto(nomeProduto);
+            Produto produto = franquia.buscarProduto(codigoProduto);
             if (produto != null) {
                 produtoEncontrado = true;
                 break;
@@ -210,11 +215,12 @@ public class Gerente extends Usuario {
         }
 
         if (!produtoEncontrado) {
-            throw new IllegalArgumentException("Produto '" + nomeProduto + "' não encontrado no sistema.");
+            throw new IllegalArgumentException("Codigo '" + codigoProduto + "' não encontrado no sistema.");
         }
         
         for (Franquia franquia : todasFranquias.findAll()) {
-            Produto produto = franquia.buscarProduto(nomeProduto);
+            Produto produto = franquia.buscarProduto(codigoProduto);
+            
             if (produto != null) {
                 franquia.removerProduto(produto);
             }
@@ -222,16 +228,16 @@ public class Gerente extends Usuario {
     }
 
 
-    public void atualizarEstoqueProduto(String nomeProduto, int novaQuantidade, String franquiaId, EntityRepository<Franquia> todasFranquias) {
+    public void atualizarEstoqueProduto(String codigoProduto, int novaQuantidade, String franquiaId, EntityRepository<Franquia> todasFranquias) {
         
         Franquia franquiaEscolhida = todasFranquias.findById(franquiaId);
         if (franquiaEscolhida == null) {
             throw new IllegalArgumentException("Franquia com ID '" + franquiaId + "' não encontrada.");
         }
         
-        Produto produto = franquiaEscolhida.buscarProduto(nomeProduto);
+        Produto produto = franquiaEscolhida.buscarProduto(codigoProduto);
         if (produto == null) {
-            throw new IllegalArgumentException("Produto '" + nomeProduto + "' não encontrado na franquia '" + franquiaEscolhida.getNome() + "'.");
+            throw new IllegalArgumentException("Codigo '" + codigoProduto + "' não encontrado na franquia '" + franquiaEscolhida.getNome() + "'.");
         }
         
         if (novaQuantidade < 0) {
@@ -271,139 +277,139 @@ public class Gerente extends Usuario {
      //------------ RELATÓRIOS ------------
 
     public void visualizarRelatorioVendas(EntityRepository<Pedido> repositorioPedidos) {
-    List<String> pedidosId = this.franquia.gerarRelatorioVendas();
-    
-    System.out.println("📊 RELATÓRIO DE VENDAS - " + this.franquia.getNome().toUpperCase());
-    System.out.println("=" .repeat(60));
-    System.out.println("Total de pedidos: " + pedidosId.size());
-    System.out.printf("💰 Receita Acumulada: R$ %.2f%n", this.franquia.getReceita());
-    System.out.println("=" .repeat(60));
-    
-    if (pedidosId.isEmpty()) {
-        System.out.println("❌ Nenhum pedido encontrado.");
-        return;
-    }
-    
-    int pedidosAprovados = 0;
-    int pedidosCancelados = 0;
-    int pedidosPendentes = 0;
-    
-    for (String pedidoId : pedidosId) {
-        Pedido pedido = repositorioPedidos.findById(pedidoId);
-        if (pedido != null) {
-            System.out.printf("🛒 %s | %s | R$ %.2f | %s%n", 
-                            pedidoId, 
-                            pedido.getCliente().getNome(), 
-                            pedido.getValorTotal(),
-                            pedido.getStatus());
-            
-            if (pedido.isAprovado()) {
-                pedidosAprovados++;
-            } else if (pedido.isCancelado()) {
-                pedidosCancelados++;
-            } else if (pedido.isPendente()) {
-                pedidosPendentes++;
-            }
-        }
-    }
-    
-    System.out.println("=" .repeat(60));
-    System.out.printf("✅ Pedidos Aprovados: %d%n", pedidosAprovados);
-    System.out.printf("⏳ Pedidos Pendentes: %d%n", pedidosPendentes);
-    System.out.printf("❌ Pedidos Cancelados: %d%n", pedidosCancelados);
-    System.out.println("=" .repeat(60));
-}
+	    List<String> pedidosId = this.franquia.gerarRelatorioVendas();
+	    
+	    System.out.println("📊 RELATÓRIO DE VENDAS - " + this.franquia.getNome().toUpperCase());
+	    System.out.println("=" .repeat(60));
+	    System.out.println("Total de pedidos: " + pedidosId.size());
+	    System.out.printf("💰 Receita Acumulada: R$ %.2f%n", this.franquia.getReceita());
+	    System.out.println("=" .repeat(60));
+	    
+	    if (pedidosId.isEmpty()) {
+	        System.out.println("❌ Nenhum pedido encontrado.");
+	        return;
+	    }
+	    
+	    int pedidosAprovados = 0;
+	    int pedidosCancelados = 0;
+	    int pedidosPendentes = 0;
+	    
+	    for (String pedidoId : pedidosId) {
+	        Pedido pedido = repositorioPedidos.findById(pedidoId);
+	        if (pedido != null) {
+	            System.out.printf("🛒 %s | %s | R$ %.2f | %s%n", 
+	                            pedidoId, 
+	                            pedido.getCliente().getNome(), 
+	                            pedido.getValorTotal(),
+	                            pedido.getStatus());
+	            
+	            if (pedido.isAprovado()) {
+	                pedidosAprovados++;
+	            } else if (pedido.isCancelado()) {
+	                pedidosCancelados++;
+	            } else if (pedido.isPendente()) {
+	                pedidosPendentes++;
+	            }
+	        }
+	    }
+	    
+	    System.out.println("=" .repeat(60));
+	    System.out.printf("✅ Pedidos Aprovados: %d%n", pedidosAprovados);
+	    System.out.printf("⏳ Pedidos Pendentes: %d%n", pedidosPendentes);
+	    System.out.printf("❌ Pedidos Cancelados: %d%n", pedidosCancelados);
+	    System.out.println("=" .repeat(60));
+	}
 
     public void visualizarRelatorioVendasPeriodo(Date dataInicio, Date dataFim,EntityRepository<Pedido> repositorioPedidos) {
-    List<String> pedidosId = this.franquia.gerarRelatorioVendasPeriodo(dataInicio, dataFim, repositorioPedidos);
-    
-    System.out.println("📅 RELATÓRIO DE VENDAS POR PERÍODO - " + this.franquia.getNome().toUpperCase());
-    System.out.printf("Período: %s até %s%n", dataInicio.toString(), dataFim.toString());
-    System.out.println("=" .repeat(60));
-    System.out.println("Total de pedidos no período: " + pedidosId.size());
-    System.out.println("=" .repeat(60));
-    
-    if (pedidosId.isEmpty()) {
-        System.out.println("❌ Nenhum pedido encontrado no período especificado.");
-        return;
-    }
-    
-    double receitaPeriodo = 0.0;
-    int pedidosAprovadosPeriodo = 0;
-    
-    for (String pedidoId : pedidosId) {
-        Pedido pedido = repositorioPedidos.findById(pedidoId);
-        if (pedido != null) {
-            System.out.printf("🛒 %s | %s | %s | R$ %.2f | %s%n", 
-                            pedidoId, 
-                            pedido.getData().toString(),
-                            pedido.getCliente().getNome(), 
-                            pedido.getValorTotal(),
-                            pedido.getStatus());
-            
-            if (pedido.isAprovado()) {
-                receitaPeriodo += pedido.getValorTotal();
-                pedidosAprovadosPeriodo++;
-            }
-        }
-    }
-    
-    System.out.println("=" .repeat(60));
-    System.out.printf("💰 Receita do Período: R$ %.2f%n", receitaPeriodo);
-    System.out.printf("✅ Pedidos Aprovados no Período: %d%n", pedidosAprovadosPeriodo);
-    double ticketMedio = pedidosAprovadosPeriodo > 0 ? receitaPeriodo / pedidosAprovadosPeriodo : 0;
-    System.out.printf("🎯 Ticket Médio: R$ %.2f%n", ticketMedio);
-    System.out.println("=" .repeat(60));
-    }
+	    List<String> pedidosId = this.franquia.gerarRelatorioVendasPeriodo(dataInicio, dataFim, repositorioPedidos);
+	    
+	    System.out.println("📅 RELATÓRIO DE VENDAS POR PERÍODO - " + this.franquia.getNome().toUpperCase());
+	    System.out.printf("Período: %s até %s%n", dataInicio.toString(), dataFim.toString());
+	    System.out.println("=" .repeat(60));
+	    System.out.println("Total de pedidos no período: " + pedidosId.size());
+	    System.out.println("=" .repeat(60));
+	    
+	    if (pedidosId.isEmpty()) {
+	        System.out.println("❌ Nenhum pedido encontrado no período especificado.");
+	        return;
+	    }
+	    
+	    double receitaPeriodo = 0.0;
+	    int pedidosAprovadosPeriodo = 0;
+	    
+	    for (String pedidoId : pedidosId) {
+	        Pedido pedido = repositorioPedidos.findById(pedidoId);
+	        if (pedido != null) {
+	            System.out.printf("🛒 %s | %s | %s | R$ %.2f | %s%n", 
+	                            pedidoId, 
+	                            pedido.getData().toString(),
+	                            pedido.getCliente().getNome(), 
+	                            pedido.getValorTotal(),
+	                            pedido.getStatus());
+	            
+	            if (pedido.isAprovado()) {
+	                receitaPeriodo += pedido.getValorTotal();
+	                pedidosAprovadosPeriodo++;
+	            }
+	        }
+	    }
+	    
+	    System.out.println("=" .repeat(60));
+	    System.out.printf("💰 Receita do Período: R$ %.2f%n", receitaPeriodo);
+	    System.out.printf("✅ Pedidos Aprovados no Período: %d%n", pedidosAprovadosPeriodo);
+	    double ticketMedio = pedidosAprovadosPeriodo > 0 ? receitaPeriodo / pedidosAprovadosPeriodo : 0;
+	    System.out.printf("🎯 Ticket Médio: R$ %.2f%n", ticketMedio);
+	    System.out.println("=" .repeat(60));
+	    }
 
     public void visualizarRelatorioClientesFrequencia(EntityRepository<Cliente> repositorioClientes) {
-    List<String> clientesRanking = this.franquia.gerarRelatorioClientesFrequencia(repositorioClientes);
-    
-    System.out.println("👥 RELATÓRIO DE CLIENTES POR FREQUÊNCIA - " + this.franquia.getNome().toUpperCase());
-    System.out.println("=" .repeat(60));
-    System.out.println("Total de clientes ativos: " + clientesRanking.size());
-    System.out.println("=" .repeat(60));
-    
-    if (clientesRanking.isEmpty()) {
-        System.out.println("❌ Nenhum cliente ativo encontrado.");
-        return;
-    }
-    
-    for (int i = 0; i < clientesRanking.size(); i++) {
-        String posicao = String.format("%2d°", i + 1);
-        String medalha = "";
-        
-        if (i == 0) medalha = "🥇";
-        else if (i == 1) medalha = "🥈";
-        else if (i == 2) medalha = "🥉";
-        else medalha = "👤";
-        
-        System.out.printf("%s %s %s%n", medalha, posicao, clientesRanking.get(i));
-    }
-    
-    System.out.println("=" .repeat(60));
-}
+	    List<String> clientesRanking = this.franquia.gerarRelatorioClientesFrequencia(repositorioClientes);
+	    
+	    System.out.println("👥 RELATÓRIO DE CLIENTES POR FREQUÊNCIA - " + this.franquia.getNome().toUpperCase());
+	    System.out.println("=" .repeat(60));
+	    System.out.println("Total de clientes ativos: " + clientesRanking.size());
+	    System.out.println("=" .repeat(60));
+	    
+	    if (clientesRanking.isEmpty()) {
+	        System.out.println("❌ Nenhum cliente ativo encontrado.");
+	        return;
+	    }
+	    
+	    for (int i = 0; i < clientesRanking.size(); i++) {
+	        String posicao = String.format("%2d°", i + 1);
+	        String medalha = "";
+	        
+	        if (i == 0) medalha = "🥇";
+	        else if (i == 1) medalha = "🥈";
+	        else if (i == 2) medalha = "🥉";
+	        else medalha = "👤";
+	        
+	        System.out.printf("%s %s %s%n", medalha, posicao, clientesRanking.get(i));
+	    }
+	    
+	    System.out.println("=" .repeat(60));
+	}
 
-    public void visualizarRelatorioEstoqueBaixo(int limiteMinimo) {
-    List<String> produtosEstoqueBaixo = listarProdutosEstoqueBaixo(this.franquia.getId(), limiteMinimo, null);
-    
-    System.out.println("⚠️ RELATÓRIO DE ESTOQUE BAIXO - " + this.franquia.getNome().toUpperCase());
-    System.out.println("=" .repeat(60));
-    System.out.println("Limite mínimo: " + limiteMinimo + " unidades");
-    System.out.println("Produtos com estoque baixo: " + produtosEstoqueBaixo.size());
-    System.out.println("=" .repeat(60));
-    
-    if (produtosEstoqueBaixo.isEmpty()) {
-        System.out.println("✅ Todos os produtos estão com estoque adequado!");
-        return;
-    }
-    
-    for (String produto : produtosEstoqueBaixo) {
-        System.out.println(produto);
-    }
-    
-    System.out.println("=" .repeat(60));
-}
+    public void visualizarRelatorioEstoqueBaixo(int limiteMinimo, EntityRepository<Franquia> todasFranquias) {
+	    List<String> produtosEstoqueBaixo = listarProdutosEstoqueBaixo(this.franquia.getId(), limiteMinimo, todasFranquias);
+	    
+	    System.out.println("⚠️ RELATÓRIO DE ESTOQUE BAIXO - " + this.franquia.getNome().toUpperCase());
+	    System.out.println("=" .repeat(60));
+	    System.out.println("Limite mínimo: " + limiteMinimo + " unidades");
+	    System.out.println("Produtos com estoque baixo: " + produtosEstoqueBaixo.size());
+	    System.out.println("=" .repeat(60));
+	    
+	    if (produtosEstoqueBaixo.isEmpty()) {
+	        System.out.println("✅ Todos os produtos estão com estoque adequado!");
+	        return;
+	    }
+	    
+	    for (String produto : produtosEstoqueBaixo) {
+	        System.out.println(produto);
+	    }
+	    
+	    System.out.println("=" .repeat(60));
+	}
 
     public void visualizarEstoqueCompleto() {
         Map<Produto, Integer> estoque = this.franquia.getEstoque();
@@ -446,6 +452,7 @@ public class Gerente extends Usuario {
             
             System.out.printf("%s%-28s | %10d | R$ %9.2f | R$ %12.2f%n", 
                             indicador, 
+                            produto.getCodigo(),
                             produto.getNome(), 
                             quantidade, 
                             precoUnitario, 
@@ -476,6 +483,12 @@ public class Gerente extends Usuario {
 
     public void setFranquia(Franquia franquia) {
         this.franquia = franquia;
+    }
+    
+    @Override
+    protected void setId() {
+    	String id = "G" + gerenteId;
+    	super.setId(id);
     }
 
     @Override
