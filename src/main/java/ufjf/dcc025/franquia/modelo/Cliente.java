@@ -128,6 +128,6 @@ public class Cliente implements Identifiable {
     @Override
     public String toString() {
         return String.format("Cliente: %s (ID: %s) | Pedidos: %d | Franquias visitadas: %d", 
-                           nome, id, getTotalPedidos(), getTotalFranquiasVisitadas());
+                           nome, id, getTotalPedidos(), pedidosPorFranquia.keySet().size());
     }
 }

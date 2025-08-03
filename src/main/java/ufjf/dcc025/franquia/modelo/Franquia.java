@@ -209,6 +209,10 @@ public class Franquia implements Identifiable {
                 .map(vendedor -> String.format("%s - Total Vendas: %.2f", vendedor.getNome(), vendedor.getTotalVendas()))
                 .collect(Collectors.toList());
     }
+    
+    public int quantidadePedidos() {
+    	return pedidosId.size();
+    }
 
     // Getters e Setters
     @Override
@@ -224,8 +228,17 @@ public class Franquia implements Identifiable {
     public String getNome() {
         return nome;
     }
+    
+    public void setNome(String nome) {
+    	this.nome = nome;
+    }
+    
     public String getEndereco() { 
         return endereco; 
+    }
+    
+    public String setEndereco(String endereco) {
+    	this.endereco = endereco;
     }
     
     public void setGerente(Gerente gerente) {

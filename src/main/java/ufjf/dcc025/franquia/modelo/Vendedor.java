@@ -56,7 +56,7 @@ public class Vendedor extends Usuario {
                 produtos.put(produto, quantidade);
                 System.out.println("Produto adicionado: " + produto.getNome());
                 
-            } catch (IllegalArgumentException | NumberFormatException e) {
+            } catch (IllegalArgumentException e) {
                 System.out.println("Erro: " + e.getMessage());
                 // Continue o loop - não encerra a função
             }

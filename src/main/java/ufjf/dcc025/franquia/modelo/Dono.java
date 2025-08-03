@@ -1,6 +1,10 @@
 package ufjf.dcc025.franquia.modelo;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.stream.Collectors;
 
 import ufjf.dcc025.franquia.enums.TipoUsuario;
 
@@ -123,7 +127,7 @@ public class Dono extends Usuario {
     public int calcularTotalPedidos(EntityRepository<Franquia> franquias) {
         int totalPedidos = 0;
         for (Franquia franquia : franquias.findAll()) {
-            totalPedidos += franquia.getTotalPedidos();
+            totalPedidos += franquia.quantidadePedidos();
         }
         return totalPedidos;
     }
