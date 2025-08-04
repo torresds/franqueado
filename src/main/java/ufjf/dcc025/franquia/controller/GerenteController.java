@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class GerenteController {
-    private final GerenteService gerenteService;
+    public final GerenteService gerenteService;
     private final EntityRepository<Pedido> repositorioPedidos;
     private final EntityRepository<Cliente> repositorioClientes;
     private final EntityRepository<Franquia> todasFranquias;

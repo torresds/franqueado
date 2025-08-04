@@ -96,6 +96,10 @@ public abstract class Usuario implements Identifiable {
     public String getEmail() {
         return email;
     }
+    
+    public String getSenha() {
+    	return senha;
+    }
 
     @Override
     public String getId() {

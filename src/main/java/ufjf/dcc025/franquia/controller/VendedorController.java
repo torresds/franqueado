@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Scanner;
 
 public class VendedorController {
-    private final VendedorService vendedorService;
+    public final VendedorService vendedorService;
 
     public VendedorController(VendedorService vendedorService) {
         this.vendedorService = vendedorService;
