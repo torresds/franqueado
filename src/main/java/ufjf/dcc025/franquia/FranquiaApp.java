@@ -12,10 +12,10 @@ import ufjf.dcc025.franquia.model.usuarios.Vendedor;
 import ufjf.dcc025.franquia.persistence.AsyncFileDAO;
 import ufjf.dcc025.franquia.persistence.EntityRepository;
 import ufjf.dcc025.franquia.util.CssManager;
-import ufjf.dcc025.franquia.view.DonoDashboardView;
-import ufjf.dcc025.franquia.view.GerenteDashboardView;
 import ufjf.dcc025.franquia.view.LoginView;
-import ufjf.dcc025.franquia.view.VendedorDashboardView;
+//import ufjf.dcc025.franquia.view.DonoDashboardView;
+//import ufjf.dcc025.franquia.view.GerenteDashboardView;
+//import ufjf.dcc025.franquia.view.VendedorDashboardView;
 
 import java.util.concurrent.TimeUnit;
 
@@ -79,29 +79,8 @@ public class FranquiaApp extends Application {
     }
 
     public void showLoginScreen() {
-        LoginView loginView = new LoginView(this, donoRepo, gerenteRepo, vendedorRepo);
+        LoginView loginView = new LoginView(this);
         Scene scene = new Scene(loginView, 1280, 800);
-        scene.getStylesheets().add("data:text/css," + CssManager.getStyles().replace("%", "%%"));
-        primaryStage.setScene(scene);
-    }
-
-    public void showDonoDashboard(Dono dono) {
-        DonoDashboardView dashboardView = new DonoDashboardView(this, dono, franquiaRepo, gerenteRepo, vendedorRepo);
-        Scene scene = new Scene(dashboardView, 1280, 800);
-        scene.getStylesheets().add("data:text/css," + CssManager.getStyles().replace("%", "%%"));
-        primaryStage.setScene(scene);
-    }
-
-    public void showGerenteDashboard(Gerente gerente) {
-        GerenteDashboardView dashboardView = new GerenteDashboardView(this, gerente, vendedorRepo, pedidoRepo, franquiaRepo, clienteRepo);
-        Scene scene = new Scene(dashboardView, 1280, 800);
-        scene.getStylesheets().add("data:text/css," + CssManager.getStyles().replace("%", "%%"));
-        primaryStage.setScene(scene);
-    }
-
-    public void showVendedorDashboard(Vendedor vendedor) {
-        VendedorDashboardView dashboardView = new VendedorDashboardView(this, vendedor, pedidoRepo, clienteRepo);
-        Scene scene = new Scene(dashboardView, 1280, 800);
         scene.getStylesheets().add("data:text/css," + CssManager.getStyles().replace("%", "%%"));
         primaryStage.setScene(scene);
     }
