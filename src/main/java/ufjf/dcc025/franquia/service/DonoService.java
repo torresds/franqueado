@@ -48,9 +48,9 @@ public class DonoService {
         Franquia novaFranquia = new Franquia(nome, endereco, gerenteId, gerentesRepository);
         gerente.setFranquia(novaFranquia);
         franquiasRepository.upsert(novaFranquia);
+        franquiasRepository.saveAllAsync();
         gerentesRepository.upsert(gerente);
         gerentesRepository.saveAllAsync();
-        franquiasRepository.saveAllAsync();
         return novaFranquia;
     }
 

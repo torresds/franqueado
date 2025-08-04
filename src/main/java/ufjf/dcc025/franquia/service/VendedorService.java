@@ -37,8 +37,8 @@ public class VendedorService {
         vendedor.getFranquia().adicionarPedido(pedidoId);
         cliente.adicionarPedido(pedidoId, vendedor.getFranquia().getId());
         pedidoRepository.upsert(novoPedido);
-        clienteRepository.upsert(cliente);
         pedidoRepository.saveAllAsync();
+        clienteRepository.upsert(cliente);
         clienteRepository.saveAllAsync();
         return novoPedido;
     }
