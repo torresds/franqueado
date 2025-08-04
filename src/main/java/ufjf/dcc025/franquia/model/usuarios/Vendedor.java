@@ -67,8 +67,9 @@ public class Vendedor extends Usuario {
         return produtos;
     }
 
-    public Pedido registrarPedido(Cliente cliente, TiposPagamento formaPagamento, TiposEntrega metodoEntrega, String pedidoId, EntityRepository<Pedido> pedidosValidos) {
+    public Pedido registrarPedido(Cliente cliente, TiposPagamento formaPagamento, TiposEntrega metodoEntrega, EntityRepository<Pedido> pedidosValidos) {
         Map<Produto, Integer> produtos = criarPedido();
+        String pedidoId = "P" + System.currentTimeMillis();
         Pedido novoPedido = new Pedido(cliente, produtos, this.franquia, formaPagamento, metodoEntrega, pedidoId, this);
         pedidosId.add(pedidoId);
         pedidosValidos.upsert(novoPedido);
@@ -101,6 +102,10 @@ public class Vendedor extends Usuario {
         
         this.franquia.getGerente().adicionarAlteracaoPedido(copia);
         return copia;
+    }
+    
+    public void cancelarPedido(String pedidoId) {
+    	this.franquia.getGerente().adicionarSolicitacaoCancelamento(pedidoId);
     }
 
     public double getTotalVendas() {

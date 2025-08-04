@@ -19,12 +19,14 @@ import ufjf.dcc025.franquia.exception.*;
 public class Gerente extends Usuario {
     private Franquia franquia;
     private List<String> pedidosPendentesId;
+    private List<String> pedidosParaCancelarId;
     private List<Pedido> alteracoesPedidos;
 
     public Gerente(String nome, String cpf, String email, String senha, String franquiaId, EntityRepository<Franquia> franquiasValidas) {
         super(nome, cpf, email, senha);
         this.franquia = franquiasValidas.findById(franquiaId).orElse(null);
         this.pedidosPendentesId = new ArrayList<>();
+        this.pedidosParaCancelarId = new ArrayList<>();
         this.alteracoesPedidos = new ArrayList<>();
     }
 
@@ -77,14 +79,17 @@ public class Gerente extends Usuario {
         if (pedidosPendentesId.contains(pedidoId)) {
             pedido.aprovarPedido();
             pedidosPendentesId.remove(pedidoId);
+            Map<Produto, Integer> produtos = pedido.getProdutosQuantidade();
+            for (Produto produto : produtos.keySet()) {
+            	franquia.atualizarEstoque(produto, -produtos.get(produto));
+            }
+            pedido.atualizarValores();
+            pedido.getVendedor().atualizarTotalVendas(pedido.getValorTotal());
+            pedido.getFranquia().atualizarReceita(pedido.getValorTotal());
         }
-        Map<Produto, Integer> produtos = pedido.getProdutosQuantidade();
-        for (Produto produto : produtos.keySet()) {
-            franquia.atualizarEstoque(produto, -produtos.get(produto));
+        if (pedidosParaCancelarId.contains(pedidoId)) {
+        	pedidosParaCancelarId.remove(pedidoId);
         }
-        pedido.atualizarValores();
-        pedido.getVendedor().atualizarTotalVendas(pedido.getValorTotal());
-        pedido.getFranquia().atualizarReceita(pedido.getValorTotal());
         return pedido;
     }
 
@@ -93,6 +98,10 @@ public class Gerente extends Usuario {
         if (pedidosPendentesId.contains(pedidoId)) {
             pedido.cancelarPedido();
             pedidosPendentesId.remove(pedidoId);
+        }
+        if (pedidosParaCancelarId.contains(pedidoId)) {
+        	pedido.cancelarPedido();
+        	pedidosParaCancelarId.remove(pedidoId);
         }
         return pedido;
     }
@@ -107,9 +116,24 @@ public class Gerente extends Usuario {
         }
         return pedidosPendentes;
     }
+    
+    public List<Pedido> listarPedidosParaCancelar(EntityRepository<Pedido> pedidosValidos) {
+        List<Pedido> pedidosParaCancelar = new ArrayList<>();
+        for (String pedidoId : pedidosParaCancelarId) {
+            Pedido pedido = pedidosValidos.findById(pedidoId).orElse(null);
+            if (pedido != null) {
+                pedidosParaCancelar.add(pedido);
+            }
+        }
+        return pedidosParaCancelar;
+    }
 
     public void adicionarPedidoPendente(String pedidoId) {
         pedidosPendentesId.add(pedidoId);
+    }
+    
+    public void adicionarSolicitacaoCancelamento(String pedidoId) {
+        pedidosParaCancelarId.add(pedidoId);
     }
 
     public void adicionarAlteracaoPedido(Pedido pedido) {
