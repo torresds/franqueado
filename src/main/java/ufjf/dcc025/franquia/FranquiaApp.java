@@ -61,10 +61,10 @@ public class FranquiaApp extends Application {
             pedidoRepo.loadAllSync(5, TimeUnit.SECONDS);
             
             if (donoRepo.findAll().isEmpty()) {
-                Dono donoPadrao = new Dono("Admin", "12345678901", "admin@franquia.com", "senha123");
+                Dono donoPadrao = new Dono("Admin", "12345678909", "admin@franquia.com", "senha123");
                 donoRepo.upsert(donoPadrao);
                 donoRepo.saveAllAsync();
-                System.out.println("Dono padrão criado: CPF=12345678901, Senha=senha123");
+                System.out.println("Dono padrão criado: CPF=12345678909, Senha=senha123");
             }
             
         } catch (Exception ex) {
