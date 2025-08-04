@@ -3,7 +3,6 @@ package ufjf.dcc025.franquia.controller;
 import ufjf.dcc025.franquia.service.GerenteService;
 import ufjf.dcc025.franquia.model.pedidos.Pedido;
 import ufjf.dcc025.franquia.model.produtos.Produto;
-import ufjf.dcc025.franquia.model.usuarios.Vendedor;
 import ufjf.dcc025.franquia.model.clientes.Cliente;
 import ufjf.dcc025.franquia.persistence.EntityRepository;
 import ufjf.dcc025.franquia.model.franquia.Franquia;

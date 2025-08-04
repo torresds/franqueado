@@ -103,12 +103,12 @@ public class DonoDashboardView extends VBox {
             TextInputDialog dialog = new TextInputDialog();
             dialog.setTitle("Cadastrar Gerente");
             dialog.setHeaderText("Digite os dados do novo gerente:");
-            dialog.setContentText("Nome, CPF, Email, Senha, Franquia ID (separados por vírgula):");
+            dialog.setContentText("Nome, CPF, Email, Senha (separados por vírgula):");
             dialog.showAndWait().ifPresent(input -> {
                 try {
                     String[] parts = input.split(",");
-                    if (parts.length != 5) throw new IllegalArgumentException("Formato inválido.");
-                    Gerente gerente = controller.donoService.cadastrarGerente(parts[0].trim(), parts[1].trim(), parts[2].trim(), parts[3].trim(), parts[4].trim());
+                    if (parts.length != 4) throw new IllegalArgumentException("Formato inválido.");
+                    Gerente gerente = controller.donoService.cadastrarGerente(parts[0].trim(), parts[1].trim(), parts[2].trim(), parts[3].trim());
                     outputArea.setText("Gerente cadastrado: " + gerente.getNome());
                 } catch (Exception ex) {
                     outputArea.setText("Erro: " + ex.getMessage());

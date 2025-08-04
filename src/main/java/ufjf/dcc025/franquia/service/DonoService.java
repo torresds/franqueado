@@ -1,6 +1,5 @@
 package ufjf.dcc025.franquia.service;
 
-import ufjf.dcc025.franquia.enums.TipoUsuario;
 import ufjf.dcc025.franquia.model.franquia.Franquia;
 import ufjf.dcc025.franquia.model.usuarios.Dono;
 import ufjf.dcc025.franquia.model.usuarios.Gerente;
@@ -43,8 +42,14 @@ public class DonoService {
     public Franquia cadastrarFranquia(String nome, String endereco, String gerenteId) {
         Gerente gerente = gerentesRepository.findById(gerenteId)
             .orElseThrow(() -> new EntidadeNaoEncontradaException(gerenteId));
+        if (gerente.getFranquia() != null) {
+            throw new DadosInvalidosException("Gerente já está associado a uma franquia.");
+        }
         Franquia novaFranquia = new Franquia(nome, endereco, gerenteId, gerentesRepository);
+        gerente.setFranquia(novaFranquia);
         franquiasRepository.upsert(novaFranquia);
+        gerentesRepository.upsert(gerente);
+        gerentesRepository.saveAllAsync();
         franquiasRepository.saveAllAsync();
         return novaFranquia;
     }
@@ -73,18 +78,10 @@ public class DonoService {
     }
 
     // Gerenciamento de Gerentes
-    public Gerente cadastrarGerente(String nome, String cpf, String email, String senha, String franquiaId) {
-        Franquia franquia = franquiasRepository.findById(franquiaId)
-            .orElseThrow(() -> new EntidadeNaoEncontradaException(franquiaId));
-        if (franquia.getGerente() != null) {
-            throw new DadosInvalidosException("Franquia já tem gerente.");
-        }
-        Gerente novoGerente = new Gerente(nome, cpf, email, senha, franquiaId, franquiasRepository);
+    public Gerente cadastrarGerente(String nome, String cpf, String email, String senha) {
+        Gerente novoGerente = new Gerente(nome, cpf, email, senha);
         gerentesRepository.upsert(novoGerente);
-        franquia.setGerente(novoGerente);
-        franquiasRepository.upsert(franquia);
         gerentesRepository.saveAllAsync();
-        franquiasRepository.saveAllAsync();
         return novoGerente;
     }
 
@@ -207,6 +204,9 @@ public class DonoService {
 
     //Getters
     
+    public Dono getDono() {
+        return dono;
+    }
     public EntityRepository<Franquia> getFranquiaRepo() {
     	return franquiasRepository;
     }

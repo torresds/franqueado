@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.Date;
 
-import ufjf.dcc025.franquia.enums.TipoUsuario;
 import ufjf.dcc025.franquia.persistence.Identifiable;
 import ufjf.dcc025.franquia.persistence.EntityRepository;
 import ufjf.dcc025.franquia.model.produtos.Produto;

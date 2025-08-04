@@ -2,8 +2,6 @@ package ufjf.dcc025.franquia.service;
 
 import ufjf.dcc025.franquia.enums.TiposEntrega;
 import ufjf.dcc025.franquia.enums.TiposPagamento;
-import ufjf.dcc025.franquia.model.franquia.Franquia;
-import ufjf.dcc025.franquia.model.usuarios.Gerente;
 import ufjf.dcc025.franquia.model.usuarios.Vendedor;
 import ufjf.dcc025.franquia.model.produtos.Produto;
 import ufjf.dcc025.franquia.model.pedidos.Pedido;
@@ -71,10 +69,7 @@ public class VendedorService {
     }
 
     public void cancelarPedido(String pedidoId) {
-        Pedido pedido = pedidoRepository.findById(pedidoId)
-            .orElseThrow(() -> new EntidadeNaoEncontradaException(pedidoId));
         vendedor.getFranquia().getGerente().adicionarSolicitacaoCancelamento(pedidoId);
-        pedidoRepository.saveAllAsync();
     }
 
     public List<Pedido> listaPedidos() {
