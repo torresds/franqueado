@@ -100,6 +100,15 @@ public class Gerente extends Usuario {
             pedidosPendentesId.remove(pedidoId);
         }
         if (pedidosParaCancelarId.contains(pedidoId)) {
+        	if (pedido.getStatus() == EstadoPedido.APROVADO) {
+        		Map<Produto, Integer> produtos = pedido.getProdutosQuantidade();
+                for (Produto produto : produtos.keySet()) {
+                	franquia.atualizarEstoque(produto, produtos.get(produto));
+                }
+                pedido.atualizarValores();
+                pedido.getVendedor().atualizarTotalVendas(-pedido.getValorTotal());
+                pedido.getFranquia().atualizarReceita(-pedido.getValorTotal());
+        	}
         	pedido.cancelarPedido();
         	pedidosParaCancelarId.remove(pedidoId);
         }
