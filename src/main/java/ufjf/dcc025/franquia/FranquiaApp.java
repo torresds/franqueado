@@ -47,18 +47,21 @@ public class FranquiaApp extends Application {
             AsyncFileDAO<Gerente> gerenteDao = new AsyncFileDAO<>(Gerente.class);
             AsyncFileDAO<Dono> donoDao = new AsyncFileDAO<>(Dono.class);
             AsyncFileDAO<Pedido> pedidoDao = new AsyncFileDAO<>(Pedido.class);
+            AsyncFileDAO<Cliente> clienteDao = new AsyncFileDAO<>(Cliente.class);
 
             franquiaRepo = new EntityRepository<>(franquiaDao);
             vendedorRepo = new EntityRepository<>(vendedorDao);
             gerenteRepo = new EntityRepository<>(gerenteDao);
             donoRepo = new EntityRepository<>(donoDao);
             pedidoRepo = new EntityRepository<>(pedidoDao);
+            clienteRepo = new EntityRepository<>(clienteDao);
             
             franquiaRepo.loadAllSync(5, TimeUnit.SECONDS);
             vendedorRepo.loadAllSync(5, TimeUnit.SECONDS);
             gerenteRepo.loadAllSync(5, TimeUnit.SECONDS);
             donoRepo.loadAllSync(5, TimeUnit.SECONDS);
             pedidoRepo.loadAllSync(5, TimeUnit.SECONDS);
+            clienteRepo.loadAllSync(5, TimeUnit.SECONDS);
             
             if (donoRepo.findAll().isEmpty()) {
                 Dono donoPadrao = new Dono("Admin", "12345678909", "admin@franquia.com", "senha123");
