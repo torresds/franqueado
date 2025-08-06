@@ -2,8 +2,9 @@ package ufjf.dcc025.franquia.persistence;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -14,55 +15,73 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * Responsável pela persistência assíncrona de entidades em arquivos JSON.
- * @param <T> tipo de entidade
+ * Versão robusta de AsyncFileDAO com:
+ *  - cache configurável e invalidação manual
+ *  - fallback em desserialização
+ *  - WAL truncado após commit
+ *  - logs detalhados
+ *  - diretório de dados configurável
  */
 public class AsyncFileDAO<T> implements AsyncDAO<T> {
-    private static final String DIRECTORY = "data";
+    private static final Logger logger = Logger.getLogger(AsyncFileDAO.class.getName());
+    private final Path dataDirectory;
     private final Path filePath;
     private final Path walPath;
     private final Gson gson;
     private final Type listType;
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
+    private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
     private final ExecutorService executor;
     private final long cacheTtlMillis;
     private volatile long lastCacheTime = 0;
     private final AtomicReference<List<T>> cache = new AtomicReference<>();
 
+    /**
+     * Construtor principal.
+     * @param type tipo da entidade
+     * @param dataDir diretório base para arquivos JSON
+     * @param executor Executor para operações assíncronas
+     * @param cacheTtlMillis TTL do cache em ms
+     * @throws IOException se falhar ao criar diretórios
+     */
+    public AsyncFileDAO(Class<T> type,
+                        Path dataDir,
+                        ExecutorService executor,
+                        long cacheTtlMillis) throws IOException {
+        this.executor = executor;
+        this.cacheTtlMillis = cacheTtlMillis;
+        this.dataDirectory = dataDir;
 
+        Files.createDirectories(dataDirectory);
+        this.filePath = dataDirectory.resolve(type.getSimpleName() + ".json");
+        this.walPath = dataDirectory.resolve(type.getSimpleName() + ".wal");
+
+        this.gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .enableComplexMapKeySerialization()
+                .create();
+
+        this.listType = TypeToken.getParameterized(List.class, type).getType();
+        setFilePermissions(filePath);
+    }
+
+    /**
+     * Construtor padrão (dataDir="data", pool fixo, TTL 5s)
+     */
     public AsyncFileDAO(Class<T> type) throws IOException {
         this(type,
+                Paths.get("data"),
                 new ThreadPoolExecutor(
                         2, 10, 60, TimeUnit.SECONDS,
                         new LinkedBlockingQueue<>(100),
                         r -> { Thread t = new Thread(r); t.setDaemon(true); return t; }
                 ),
-                5_000L); // cache TTL = 5s
-    }
-
-
-    /**
-     * Construtor com ExecutorService e TTL de cache configuráveis.
-     * @param type tipo da entidade a ser persistida
-     * @param executor ExecutorService para operações assíncronas
-     * @param cacheTtlMillis tempo de vida do cache em milissegundos
-     * @throws IOException se ocorrer erro ao criar diretórios ou arquivos
-     */
-    public AsyncFileDAO(Class<T> type, ExecutorService executor, long cacheTtlMillis) throws IOException {
-        this.executor = executor;
-        this.cacheTtlMillis = cacheTtlMillis;
-
-        Files.createDirectories(Paths.get(DIRECTORY));
-        this.filePath = Paths.get(DIRECTORY, type.getSimpleName() + ".json");
-        this.walPath = Paths.get(DIRECTORY, type.getSimpleName() + ".wal");
-
-        this.gson = new GsonBuilder().setPrettyPrinting().create();
-        this.listType = TypeToken.getParameterized(List.class, type).getType();
-
-        setFilePermissions(filePath);
+                5_000L);
     }
 
     @Override
@@ -70,19 +89,30 @@ public class AsyncFileDAO<T> implements AsyncDAO<T> {
         return CompletableFuture.runAsync(() -> {
             lock.writeLock().lock();
             try {
-                try (FileWriter walWriter = new FileWriter(walPath.toFile(), true)) {
+                // grava WAL apenas última operação
+                try (FileWriter walWriter = new FileWriter(walPath.toFile(), false)) {
                     walWriter.write(gson.toJson(list));
                     walWriter.write(System.lineSeparator());
                 }
+
                 String json = gson.toJson(list);
-                Path tmp = Files.createTempFile(filePath.getParent(), "tmp-", ".json");
+                Path tmp = Files.createTempFile(dataDirectory, "tmp-", ".json");
                 Files.write(tmp, json.getBytes(StandardCharsets.UTF_8));
                 Files.move(tmp, filePath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-                Files.deleteIfExists(walPath);
+
+                // truncate WAL
+                try {
+                    Files.newBufferedWriter(walPath, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING).close();
+                } catch (IOException e) {
+                    logger.log(Level.WARNING, "Falha ao truncar WAL: " + walPath, e);
+                }
+
                 cache.set(new ArrayList<>(list));
                 lastCacheTime = System.currentTimeMillis();
                 setFilePermissions(filePath);
+                logger.log(Level.INFO, "Save completed for " + filePath);
             } catch (IOException e) {
+                logger.log(Level.SEVERE, "Erro ao salvar JSON", e);
                 throw new CompletionException(e);
             } finally {
                 lock.writeLock().unlock();
@@ -100,21 +130,33 @@ public class AsyncFileDAO<T> implements AsyncDAO<T> {
                 if (cached != null && (now - lastCacheTime) < cacheTtlMillis) {
                     return new ArrayList<>(cached);
                 }
+
                 replayWAL();
+
                 if (!Files.exists(filePath)) {
                     cache.set(new ArrayList<>());
                     lastCacheTime = now;
                     return new ArrayList<>();
                 }
+
                 String content = Files.readString(filePath, StandardCharsets.UTF_8);
-                List<T> list = gson.fromJson(content, listType);
+                List<T> list;
+                try {
+                    list = gson.fromJson(content, listType);
+                } catch (JsonSyntaxException e) {
+                    logger.log(Level.WARNING, "JSON inválido em " + filePath + ", usando lista vazia", e);
+                    list = new ArrayList<>();
+                }
+
                 if (list == null) {
                     list = new ArrayList<>();
                 }
+
                 cache.set(new ArrayList<>(list));
                 lastCacheTime = now;
                 return list;
             } catch (IOException e) {
+                logger.log(Level.SEVERE, "Erro ao ler JSON", e);
                 throw new CompletionException(e);
             } finally {
                 lock.readLock().unlock();
@@ -123,22 +165,14 @@ public class AsyncFileDAO<T> implements AsyncDAO<T> {
     }
 
     /**
-     * Carrega de forma síncrona, aguardando até o timeout especificado.
-     * @param timeout tempo máximo de espera
-     * @param unit unidade de tempo do timeout
-     * @return lista de entidades
-     * @throws InterruptedException se a thread for interrompida
-     * @throws ExecutionException se ocorrer erro na tarefa de carregamento
-     * @throws TimeoutException se o tempo expirar
+     * Invalida manualmente o cache em memória.
      */
-    public List<T> loadSync(long timeout, TimeUnit unit)
-            throws InterruptedException, ExecutionException, TimeoutException {
-        return load().get(timeout, unit);
+    public void invalidateCache() {
+        cache.set(null);
+        lastCacheTime = 0;
+        logger.log(Level.INFO, "Cache invalidado para " + filePath);
     }
 
-    /**
-     * Reaplica última transação pendente do WAL.
-     */
     private void replayWAL() throws IOException {
         if (!Files.exists(walPath)) return;
         List<String> lines = Files.readAllLines(walPath, StandardCharsets.UTF_8);
@@ -147,22 +181,20 @@ public class AsyncFileDAO<T> implements AsyncDAO<T> {
             @SuppressWarnings("unchecked")
             List<T> lastList = gson.fromJson(last, listType);
             String json = gson.toJson(lastList);
-            Path tmp = Files.createTempFile(filePath.getParent(), "tmp-", ".json");
+            Path tmp = Files.createTempFile(dataDirectory, "tmp-", ".json");
             Files.write(tmp, json.getBytes(StandardCharsets.UTF_8));
             Files.move(tmp, filePath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            // após replay, truncamos WAL
+            Files.newBufferedWriter(walPath, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING).close();
         }
-        Files.deleteIfExists(walPath);
     }
 
-    /**
-     * Define permissões POSIX "rw-------" para o arquivo.
-     */
     private void setFilePermissions(Path path) {
         try {
             Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rw-------");
             Files.setPosixFilePermissions(path, perms);
         } catch (IOException | UnsupportedOperationException ignored) {
-            // sistema nao posix
+            // ambiente não POSIX
         }
     }
 }
