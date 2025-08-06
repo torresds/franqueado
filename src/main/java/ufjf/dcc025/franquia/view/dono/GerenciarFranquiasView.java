@@ -1,4 +1,4 @@
-package ufjf.dcc025.franquia.view.DonoDashboard;
+package ufjf.dcc025.franquia.view.dono;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;

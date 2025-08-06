@@ -1,5 +1,6 @@
 package ufjf.dcc025.franquia.service;
 
+import ufjf.dcc025.franquia.model.clientes.Cliente;
 import ufjf.dcc025.franquia.model.franquia.Franquia;
 import ufjf.dcc025.franquia.model.pedidos.Pedido;
 import ufjf.dcc025.franquia.model.usuarios.Gerente;
@@ -19,13 +20,14 @@ public class GerenteService {
     private final EntityRepository<Vendedor> vendedorRepository;
     private final EntityRepository<Pedido> pedidoRepository;
     private final EntityRepository<Franquia> franquiaRepository;
-
+    private final EntityRepository<Cliente> clienteRepository;
     public GerenteService(Gerente gerente, EntityRepository<Vendedor> vendedorRepository,
-                          EntityRepository<Pedido> pedidoRepository, EntityRepository<Franquia> franquiaRepository) {
+                          EntityRepository<Pedido> pedidoRepository, EntityRepository<Franquia> franquiaRepository, EntityRepository<Cliente> clienteRepository) {
         this.gerente = gerente;
         this.vendedorRepository = vendedorRepository;
         this.pedidoRepository = pedidoRepository;
         this.franquiaRepository = franquiaRepository;
+        this.clienteRepository = clienteRepository;
     }
 
     // Gerenciamento de Vendedores
@@ -176,6 +178,35 @@ public class GerenteService {
         vendedorRepository.saveAllAsync();
 
         return pedido;
+    }
+
+    public List<Vendedor> rankingVendedoresDaFranquia() {
+        return listarVendedoresDaFranquia().stream()
+                .sorted(Comparator.comparingDouble(Vendedor::getTotalVendas).reversed())
+                .collect(Collectors.toList());
+    }
+
+    public List<Map.Entry<Produto, Long>> relatorioProdutosMaisVendidos() {
+        if (getFranquia() == null) return new ArrayList<>();
+
+        return listarPedidosDaFranquia().stream()
+                .filter(Pedido::isAprovado)
+                .flatMap(p -> p.getProdutosQuantidade().entrySet().stream())
+                .collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.summingLong(Map.Entry::getValue)))
+                .entrySet().stream()
+                .sorted(Map.Entry.<Produto, Long>comparingByValue().reversed())
+                .collect(Collectors.toList());
+    }
+
+    public List<Map.Entry<Cliente, Long>> relatorioClientesMaisFrequentes() {
+        if (getFranquia() == null) return new ArrayList<>();
+
+        return listarPedidosDaFranquia().stream()
+                .filter(Pedido::isAprovado)
+                .collect(Collectors.groupingBy(Pedido::getCliente, Collectors.counting()))
+                .entrySet().stream()
+                .sorted(Map.Entry.<Cliente, Long>comparingByValue().reversed())
+                .collect(Collectors.toList());
     }
 
 

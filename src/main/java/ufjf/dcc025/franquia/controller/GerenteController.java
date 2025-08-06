@@ -1,6 +1,7 @@
 // FILE: src/main/java/ufjf/dcc025/franquia/controller/GerenteController.java
 package ufjf.dcc025.franquia.controller;
 
+import ufjf.dcc025.franquia.model.clientes.Cliente;
 import ufjf.dcc025.franquia.model.usuarios.Vendedor;
 import ufjf.dcc025.franquia.service.GerenteService;
 import ufjf.dcc025.franquia.model.pedidos.Pedido;
@@ -17,7 +18,6 @@ public class GerenteController {
         this.gerenteService = gerenteService;
     }
 
-    // MÉTODOS PARA A VIEW - VENDEDORES
     public List<Vendedor> getVendedoresDaFranquia() {
         return gerenteService.listarVendedoresDaFranquia();
     }
@@ -31,9 +31,7 @@ public class GerenteController {
         gerenteService.removerVendedor(id);
     }
 
-    // MÉTODOS PARA A VIEW - ESTOQUE/PRODUTOS
     public Map<Produto, Integer> getEstoque() {
-        // CORRIGIDO: Adiciona verificação para evitar NullPointerException
         if (gerenteService.getFranquia() == null) {
             return Collections.emptyMap();
         }
@@ -49,7 +47,6 @@ public class GerenteController {
         gerenteService.atualizarEstoqueProduto(codigoProduto, novaQuantidade);
     }
 
-    // MÉTODOS PARA A VIEW - PEDIDOS
     public List<Pedido> getPedidosDaFranquia() {
         return gerenteService.listarPedidosDaFranquia();
     }
@@ -58,5 +55,17 @@ public class GerenteController {
     }
     public void cancelarPedido(String pedidoId) {
         gerenteService.cancelarPedido(pedidoId);
+    }
+
+    public List<Vendedor> getRankingVendedoresLocal() {
+        return gerenteService.rankingVendedoresDaFranquia();
+    }
+
+    public List<Map.Entry<Produto, Long>> getProdutosMaisVendidos() {
+        return gerenteService.relatorioProdutosMaisVendidos();
+    }
+
+    public List<Map.Entry<Cliente, Long>> getClientesMaisFrequentes() {
+        return gerenteService.relatorioClientesMaisFrequentes();
     }
 }

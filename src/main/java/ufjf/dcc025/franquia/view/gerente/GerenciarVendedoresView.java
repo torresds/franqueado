@@ -1,4 +1,4 @@
-package ufjf.dcc025.franquia.view;
+package ufjf.dcc025.franquia.view.gerente;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;

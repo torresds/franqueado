@@ -1,6 +1,7 @@
 // FILE: src/main/java/ufjf/dcc025/franquia/util/DataSeeder.java
 package ufjf.dcc025.franquia.util;
 
+import ufjf.dcc025.franquia.enums.EstadoPedido;
 import ufjf.dcc025.franquia.enums.TiposEntrega;
 import ufjf.dcc025.franquia.enums.TiposPagamento;
 import ufjf.dcc025.franquia.model.clientes.Cliente;
@@ -11,22 +12,14 @@ import ufjf.dcc025.franquia.model.usuarios.Gerente;
 import ufjf.dcc025.franquia.model.usuarios.Vendedor;
 import ufjf.dcc025.franquia.persistence.EntityRepository;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
-/**
- * Classe utilitária para popular ou limpar o banco de dados com dados de teste.
- */
 public class DataSeeder {
 
     public enum SeedScenario {
-        INITIAL_SETUP, // Cenário básico com pouca movimentação
-        BUSY_MONTH,    // Cenário de um mês agitado, com muitas vendas
-        NEW_EXPANSION  // Cenário de expansão, com novas lojas
+        REALISTIC
     }
 
     private final EntityRepository<Franquia> franquiaRepo;
@@ -36,14 +29,19 @@ public class DataSeeder {
     private final EntityRepository<Cliente> clienteRepo;
     private final Random random = new Random();
 
-    public DataSeeder(EntityRepository<Franquia> franquiaRepo, EntityRepository<Vendedor> vendedorRepo,
-                      EntityRepository<Gerente> gerenteRepo, EntityRepository<Pedido> pedidoRepo,
-                      EntityRepository<Cliente> clienteRepo) {
-        this.franquiaRepo = franquiaRepo;
-        this.vendedorRepo = vendedorRepo;
-        this.gerenteRepo = gerenteRepo;
-        this.pedidoRepo = pedidoRepo;
-        this.clienteRepo = clienteRepo;
+    // Listas de nomes para geração de dados realistas
+    private final List<String> nomes = List.of("Miguel", "Arthur", "Gael", "Heitor", "Theo", "Davi", "Alice", "Laura", "Maria Alice", "Helena", "Sophia", "Isabella");
+    private final List<String> sobrenomes = List.of("Silva", "Santos", "Oliveira", "Souza", "Rodrigues", "Ferreira", "Alves", "Pereira", "Lima", "Gomes", "Ribeiro", "Martins");
+    private final List<String> nomesPizzas = List.of("Calabresa", "Mussarela", "Frango com Catupiry", "Portuguesa", "Marguerita", "Quatro Queijos", "Pepperoni", "Atum", "Bacon", "Lombo Canadense");
+    private final List<String> nomesBebidas = List.of("Coca-Cola 2L", "Guaraná Antarctica 2L", "Suco de Laranja 1L", "Água Mineral 500ml", "Cerveja Heineken Long Neck");
+    private final List<String> nomesRuas = List.of("Rua Principal", "Avenida Brasil", "Rua das Flores", "Avenida Getúlio Vargas", "Rua Sete de Setembro", "Rua da Matriz");
+
+    public DataSeeder(EntityRepository<Franquia> fr, EntityRepository<Vendedor> vr, EntityRepository<Gerente> gr, EntityRepository<Pedido> pr, EntityRepository<Cliente> cr) {
+        this.franquiaRepo = fr;
+        this.vendedorRepo = vr;
+        this.gerenteRepo = gr;
+        this.pedidoRepo = pr;
+        this.clienteRepo = cr;
     }
 
     public void clearDatabase() {
@@ -60,141 +58,163 @@ public class DataSeeder {
     public void seedDatabase(SeedScenario scenario) {
         System.out.println("Populando o banco de dados com o cenário: " + scenario);
         clearDatabase();
-
-        List<Produto> produtos = createProducts();
-        List<Cliente> clientes = createClientes();
-
-        switch (scenario) {
-            case INITIAL_SETUP:
-                seedInitialSetup(produtos, clientes);
-                break;
-            case BUSY_MONTH:
-                seedBusyMonth(produtos, clientes);
-                break;
-            case NEW_EXPANSION:
-                seedNewExpansion(produtos, clientes);
-                break;
+        if (scenario == SeedScenario.REALISTIC) {
+            seedRealistic();
         }
-
         saveAll();
         System.out.println("Banco de dados populado com sucesso.");
     }
 
-    private void seedInitialSetup(List<Produto> produtos, List<Cliente> clientes) {
-        Gerente g1 = new Gerente("Carlos Pereira", "85632348045", "carlos@franquia.com", "senha123");
-        gerenteRepo.upsert(g1);
-
-        Franquia f1 = new Franquia("Pizzaria Centro", "Rua Principal, 123", g1);
-        g1.setFranquia(f1);
-        produtos.forEach(p -> f1.adicionarProduto(p, 30));
-        franquiaRepo.upsert(f1);
-
-        Vendedor v1 = new Vendedor("Ana Silva", "99518169047", "ana@franquia.com", "senha123", f1);
-        vendedorRepo.upsert(v1);
-
-        createAndProcessOrder(v1, g1, clientes.get(0), Map.of(produtos.get(0), 1, produtos.get(2), 2));
-        createAndProcessOrder(v1, g1, clientes.get(1), Map.of(produtos.get(1), 1));
+    private void seedRealistic() {
+        List<Produto> produtos = createProducts(15);
+        List<Cliente> clientes = createClientes(50);
+        List<Gerente> gerentes = createGerentes(8);
+        List<Franquia> franquias = createFranquias(10, gerentes, produtos);
+        List<Vendedor> vendedores = createVendedores(15, franquias);
+        createRealisticOrders(200, vendedores, clientes, produtos);
     }
 
-    private void seedBusyMonth(List<Produto> produtos, List<Cliente> clientes) {
-        Gerente g1 = new Gerente("Sofia Almeida", "72179856070", "sofia@franquia.com", "senha123");
-        Gerente g2 = new Gerente("Mariana Costa", "13275291002", "mariana@franquia.com", "senha123");
-        gerenteRepo.upsert(g1);
-        gerenteRepo.upsert(g2);
+    private List<Produto> createProducts(int count) {
+        List<Produto> productList = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            String nome;
+            String desc;
+            double preco;
+            if (i < nomesPizzas.size()) {
+                nome = "Pizza de " + nomesPizzas.get(i);
+                desc = "Deliciosa pizza com ingredientes selecionados.";
+                preco = 40 + random.nextDouble() * 25;
+            } else {
+                nome = nomesBebidas.get(i % nomesBebidas.size());
+                desc = "Bebida gelada para acompanhar.";
+                preco = 8 + random.nextDouble() * 10;
+            }
+            productList.add(new Produto("P" + String.format("%03d", i + 1), nome, desc, preco));
+        }
+        return productList;
+    }
 
-        Franquia f1 = new Franquia("Pizzaria Zona Norte", "Av. Norte, 456", g1);
-        g1.setFranquia(f1);
-        produtos.forEach(p -> f1.adicionarProduto(p, 150));
-        franquiaRepo.upsert(f1);
+    private List<Cliente> createClientes(int count) {
+        List<Cliente> clientList = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            String nome = nomes.get(random.nextInt(nomes.size())) + " " + sobrenomes.get(random.nextInt(sobrenomes.size()));
+            String cpf = generateRandomCpf();
+            String email = nome.toLowerCase().replace(" ", ".") + "@email.com";
+            String telefone = "329" + (10000000 + random.nextInt(90000000));
+            String endereco = nomesRuas.get(random.nextInt(nomesRuas.size())) + ", " + (1 + random.nextInt(1000));
+            Cliente c = new Cliente(nome, cpf, email, telefone, endereco);
+            clientList.add(c);
+            clienteRepo.upsert(c);
+        }
+        return clientList;
+    }
 
-        Franquia f2 = new Franquia("Pizzaria Zona Sul", "Av. Sul, 789", g2);
-        g2.setFranquia(f2);
-        produtos.forEach(p -> f2.adicionarProduto(p, 200));
-        franquiaRepo.upsert(f2);
+    private List<Gerente> createGerentes(int count) {
+        List<Gerente> gerentesList = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            String nome = nomes.get(random.nextInt(nomes.size())) + " " + sobrenomes.get(random.nextInt(sobrenomes.size()));
+            String cpf = generateRandomCpf();
+            String email = "gerente." + nome.toLowerCase().replace(" ", "") + "@franquia.com";
+            Gerente g = new Gerente(nome, cpf, email, "senha123");
+            gerentesList.add(g);
+            gerenteRepo.upsert(g);
+        }
+        return gerentesList;
+    }
 
-        Vendedor v1_1 = new Vendedor("Bruno Souza", "21559890065", "bruno@franquia.com", "senha123", f1);
-        Vendedor v1_2 = new Vendedor("Clara Lima", "88393892007", "clara@franquia.com", "senha123", f1);
-        Vendedor v2_1 = new Vendedor("Rafael Martins", "72150182093", "rafael@franquia.com", "senha123", f2);
-        vendedorRepo.upsert(v1_1);
-        vendedorRepo.upsert(v1_2);
-        vendedorRepo.upsert(v2_1);
+    private List<Franquia> createFranquias(int count, List<Gerente> gerentes, List<Produto> produtos) {
+        List<Franquia> franquiasList = new ArrayList<>();
+        String[] bairros = {"Centro", "Zona Norte", "Zona Sul", "Leste", "Oeste", "Aeroporto", "Shopping", "Universidade", "Industrial", "Praça"};
+        List<Gerente> gerentesDisponiveis = new ArrayList<>(gerentes);
 
-        for (int i = 0; i < 25; i++) {
-            createAndProcessOrder(v1_1, g1, clientes.get(i % clientes.size()), Map.of(produtos.get(i % produtos.size()), 1 + random.nextInt(2)));
-            createAndProcessOrder(v1_2, g1, clientes.get(i % clientes.size()), Map.of(produtos.get(i % produtos.size()), 1));
-            createAndProcessOrder(v2_1, g2, clientes.get(i % clientes.size()), Map.of(produtos.get(i % produtos.size()), 1 + random.nextInt(3)));
+        for (int i = 0; i < count; i++) {
+            String nome = "Pizzaria " + bairros[i % bairros.length];
+            String endereco = nomesRuas.get(random.nextInt(nomesRuas.size())) + ", " + (100 + random.nextInt(500)) + ", " + bairros[i % bairros.length];
+
+            Gerente gerente = null;
+            if (!gerentesDisponiveis.isEmpty() && random.nextBoolean()) { // Nem toda franquia terá gerente
+                gerente = gerentesDisponiveis.remove(random.nextInt(gerentesDisponiveis.size()));
+            }
+
+            Franquia f = new Franquia(nome, endereco, gerente);
+            if (gerente != null) {
+                gerente.setFranquia(f);
+            }
+
+            produtos.forEach(p -> f.adicionarProduto(p, 20 + random.nextInt(80)));
+            franquiasList.add(f);
+            franquiaRepo.upsert(f);
+        }
+        return franquiasList;
+    }
+
+    private List<Vendedor> createVendedores(int count, List<Franquia> franquias) {
+        List<Vendedor> vendedoresList = new ArrayList<>();
+        for(int i = 0; i < count; i++) {
+            String nome = nomes.get(random.nextInt(nomes.size())) + " " + sobrenomes.get(random.nextInt(sobrenomes.size()));
+            String cpf = generateRandomCpf();
+            String email = "vendedor." + nome.toLowerCase().replace(" ", "") + "@franquia.com";
+            Franquia f = franquias.get(random.nextInt(franquias.size()));
+            Vendedor v = new Vendedor(nome, cpf, email, "senha123", f);
+            vendedoresList.add(v);
+            vendedorRepo.upsert(v);
+        }
+        return vendedoresList;
+    }
+
+    private void createRealisticOrders(int count, List<Vendedor> vendedores, List<Cliente> clientes, List<Produto> produtos) {
+        List<Vendedor> vendedoresComFranquia = vendedores.stream()
+                .filter(v -> v.getFranquia() != null && v.getFranquia().getGerente() != null)
+                .collect(Collectors.toList());
+
+        for (int i = 0; i < count; i++) {
+            Vendedor vendedor = vendedoresComFranquia.get(random.nextInt(vendedoresComFranquia.size()));
+            Cliente cliente = clientes.get(random.nextInt(clientes.size()));
+
+            Map<Produto, Integer> itensPedido = new HashMap<>();
+            int numItens = 1 + random.nextInt(4); // 1 a 4 produtos por pedido
+            for (int j = 0; j < numItens; j++) {
+                Produto p = produtos.get(random.nextInt(produtos.size()));
+                itensPedido.put(p, 1 + random.nextInt(2)); // 1 a 2 unidades por produto
+            }
+
+            TiposPagamento pagamento = TiposPagamento.values()[random.nextInt(TiposPagamento.values().length)];
+            TiposEntrega entrega = TiposEntrega.values()[random.nextInt(TiposEntrega.values().length)];
+
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.DAY_OF_MONTH, -random.nextInt(60)); // Pedidos nos últimos 60 dias
+            cal.add(Calendar.HOUR_OF_DAY, -random.nextInt(12));
+            Date dataPedido = cal.getTime();
+
+            createAndProcessOrder(vendedor, vendedor.getFranquia().getGerente(), cliente, itensPedido, pagamento, entrega, dataPedido);
         }
     }
 
-    private void seedNewExpansion(List<Produto> produtos, List<Cliente> clientes) {
-        Gerente g1 = new Gerente("Heitor Bernardes", "58932599049", "heitor@franquia.com", "senha123");
-        gerenteRepo.upsert(g1);
+    private void createAndProcessOrder(Vendedor v, Gerente g, Cliente c, Map<Produto, Integer> produtos, TiposPagamento pag, TiposEntrega ent, Date data) {
+        Pedido novoPedido = new Pedido(c, produtos, v.getFranquia(), pag, ent, v);
+        novoPedido.setData(data);
+        String pedidoId = novoPedido.getId();
+        v.adicionarPedidoId(pedidoId);
+        v.getFranquia().adicionarPedido(pedidoId);
+        c.adicionarPedido(pedidoId, v.getFranquia().getId());
 
-        Franquia f1 = new Franquia("Matriz Histórica", "Praça da Matriz, 10", g1);
-        g1.setFranquia(f1);
-        produtos.forEach(p -> f1.adicionarProduto(p, 100));
-        franquiaRepo.upsert(f1);
+        // Simula status variados
+        double chance = random.nextDouble();
+        if (chance < 0.85) { // 85% de chance de ser aprovado
+            novoPedido.aprovarPedido();
+            for (Map.Entry<Produto, Integer> entry : novoPedido.getProdutosQuantidade().entrySet()) {
+                g.getFranquia().atualizarEstoque(entry.getKey(), -entry.getValue());
+            }
+            v.atualizarTotalVendas(novoPedido.getValorTotal());
+            v.getFranquia().atualizarReceita(novoPedido.getValorTotal());
+        } else if (chance < 0.95) { // 10% de chance de ser cancelado
+            novoPedido.cancelarPedido();
+        } // 5% restante fica como pendente
 
-        Franquia f2 = new Franquia("Expansão Aeroporto", "Av. dos Viajantes, S/N", null);
-        produtos.forEach(p -> f2.adicionarProduto(p, 20));
-        franquiaRepo.upsert(f2);
-
-        Franquia f3 = new Franquia("Unidade Shopping", "Shopping Central, Loja 15", null);
-        produtos.forEach(p -> f3.adicionarProduto(p, 50));
-        franquiaRepo.upsert(f3);
-
-        Vendedor v1 = new Vendedor("Laura Campos", "53939949038", "laura@franquia.com", "senha123", f1);
-        vendedorRepo.upsert(v1);
-
-        createAndProcessOrder(v1, g1, clientes.get(0), Map.of(produtos.get(0), 1));
-        createAndProcessOrder(v1, g1, clientes.get(1), Map.of(produtos.get(1), 2));
-    }
-
-    private List<Produto> createProducts() {
-        return List.of(
-                new Produto("P001", "Pizza Margherita", "Molho, mussarela e manjericão", 45.00),
-                new Produto("P002", "Pizza Pepperoni", "Molho, mussarela e pepperoni", 55.00),
-                new Produto("P003", "Refrigerante 2L", "Coca-Cola, Guaraná ou Fanta", 12.00),
-                new Produto("P004", "Suco Natural 1L", "Laranja, Abacaxi ou Morango", 15.00),
-                new Produto("P005", "Brownie de Chocolate", "Brownie com nozes e calda", 18.00)
-        );
-    }
-
-    private List<Cliente> createClientes() {
-        List<Cliente> clientes = new ArrayList<>();
-        clientes.add(new Cliente("João Mendes", "26321899036", "joao@email.com", "3299998888", "Rua A, 1"));
-        clientes.add(new Cliente("Fernanda Lima", "73219484085", "fernanda@email.com", "3298887777", "Rua B, 2"));
-        clientes.add(new Cliente("Lucas Martins", "34228318048", "lucas@email.com", "3297776666", "Rua C, 3"));
-        clientes.forEach(clienteRepo::upsert);
-        return clientes;
-    }
-
-    /**
-     * Cria e processa um pedido em memória, sem chamar os serviços que salvam em disco a cada passo.
-     */
-    private void createAndProcessOrder(Vendedor vendedor, Gerente gerente, Cliente cliente, Map<Produto, Integer> produtos) {
-        // Lógica de VendedorService.registrarPedido
-        String pedidoId = "P" + System.currentTimeMillis() + random.nextInt(1000);
-        Pedido novoPedido = new Pedido(cliente, produtos, vendedor.getFranquia(), TiposPagamento.PIX, TiposEntrega.DELIVERY, pedidoId, vendedor);
-
-        vendedor.adicionarPedidoId(pedidoId);
-        vendedor.getFranquia().adicionarPedido(pedidoId);
-        cliente.adicionarPedido(pedidoId, vendedor.getFranquia().getId());
         pedidoRepo.upsert(novoPedido);
-
-        // Lógica de GerenteService.aceitarPedido
-        novoPedido.aprovarPedido();
-        for (Map.Entry<Produto, Integer> entry : novoPedido.getProdutosQuantidade().entrySet()) {
-            gerente.getFranquia().atualizarEstoque(entry.getKey(), -entry.getValue());
-        }
-        novoPedido.getVendedor().atualizarTotalVendas(novoPedido.getValorTotal());
-        novoPedido.getFranquia().atualizarReceita(novoPedido.getValorTotal());
-
-        // Atualiza as entidades modificadas no repositório em memória
-        pedidoRepo.upsert(novoPedido);
-        franquiaRepo.upsert(gerente.getFranquia());
-        vendedorRepo.upsert(vendedor);
-        clienteRepo.upsert(cliente);
+        franquiaRepo.upsert(g.getFranquia());
+        vendedorRepo.upsert(v);
+        clienteRepo.upsert(c);
     }
 
     private void saveAll() {
@@ -207,5 +227,29 @@ public class DataSeeder {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private String generateRandomCpf() {
+        // Gera um CPF aleatório válido (algoritmo simplificado)
+        int[] cpf = new int[11];
+        for (int i = 0; i < 9; i++) {
+            cpf[i] = random.nextInt(10);
+        }
+        cpf[9] = calcularDigito(cpf, 10);
+        cpf[10] = calcularDigito(cpf, 11);
+        StringBuilder sb = new StringBuilder();
+        for (int i : cpf) {
+            sb.append(i);
+        }
+        return sb.toString();
+    }
+
+    private int calcularDigito(int[] cpf, int peso) {
+        int soma = 0;
+        for (int i = 0; i < peso - 1; i++) {
+            soma += cpf[i] * (peso - i);
+        }
+        int resto = soma % 11;
+        return (resto < 2) ? 0 : 11 - resto;
     }
 }

@@ -3,6 +3,7 @@ package ufjf.dcc025.franquia.model.franquia;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.Date;
@@ -16,6 +17,7 @@ import ufjf.dcc025.franquia.model.clientes.Cliente;
 import ufjf.dcc025.franquia.exception.*;
 
 public class Franquia implements Identifiable {
+    private static final AtomicLong idCounter = new AtomicLong(System.currentTimeMillis());
     private String id;
     private String nome;
     private String endereco;
@@ -27,13 +29,13 @@ public class Franquia implements Identifiable {
 
     public Franquia(String nome, String endereco, Gerente gerente) {
         this.nome = nome;
-        setId();
         this.endereco = endereco;
         this.gerente = gerente;
         this.vendedores = new ArrayList<>();
         this.pedidosId = new ArrayList<>();
         this.estoque = new HashMap<>();
         this.receita = 0.0;
+        setId();
     }
 
     //------------ GERENCIAMENTO DE FATURAMENTO ------------
@@ -234,7 +236,7 @@ public class Franquia implements Identifiable {
     }
 
     private void setId() {
-        String newId = "F" + System.currentTimeMillis();
+        String newId = "F" + idCounter.getAndIncrement();
         this.id = newId;
     }
 

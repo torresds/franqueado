@@ -1,4 +1,4 @@
-package ufjf.dcc025.franquia.view;
+package ufjf.dcc025.franquia.view.common;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.*;

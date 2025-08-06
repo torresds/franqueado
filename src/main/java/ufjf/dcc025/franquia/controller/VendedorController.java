@@ -1,14 +1,14 @@
 package ufjf.dcc025.franquia.controller;
 
+import ufjf.dcc025.franquia.enums.TiposEntrega;
+import ufjf.dcc025.franquia.enums.TiposPagamento;
+import ufjf.dcc025.franquia.model.clientes.Cliente;
 import ufjf.dcc025.franquia.service.VendedorService;
 import ufjf.dcc025.franquia.model.produtos.Produto;
 import ufjf.dcc025.franquia.model.pedidos.Pedido;
-import ufjf.dcc025.franquia.exception.*;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
-import java.util.Scanner;
+import java.util.Map;
 
 public class VendedorController {
     public final VendedorService vendedorService;
@@ -17,46 +17,23 @@ public class VendedorController {
         this.vendedorService = vendedorService;
     }
 
-    public Map<Produto, Integer> criarPedido() {
-        Map<Produto, Integer> produtos = new HashMap<>();
-        Scanner scanner = new Scanner(System.in);
-        while (true) {
-            try {
-                System.out.println("Digite o código do produto (ou 'sair' para finalizar):");
-                String input = scanner.nextLine();
-                if (input.equalsIgnoreCase("sair")) {
-                    break;
-                }
-                Produto produto = vendedorService.getVendedor().getFranquia().buscarProduto(input);
-                if (produto == null) {
-                    throw new EntidadeNaoEncontradaException(input);
-                }
-                System.out.println("Digite a quantidade:");
-                int quantidade = Integer.parseInt(scanner.nextLine());
-                if (quantidade <= 0) {
-                    throw new DadosInvalidosException("Quantidade deve ser maior que zero!");
-                }
-                produtos.put(produto, quantidade);
-                System.out.println("Produto adicionado: " + produto.getNome());
-            } catch (IllegalArgumentException e) {
-                System.out.println("Erro: " + e.getMessage());
-            }
-        }
-        return produtos;
+    public List<Pedido> getPedidosDoVendedor() {
+        return vendedorService.listaPedidos();
     }
 
-    public void visualizarPedidos() {
-        List<Pedido> pedidos = vendedorService.listaPedidos();
-        System.out.println("🛒 LISTA DE PEDIDOS - VENDEDOR: " + vendedorService.getVendedor().getNome());
-        System.out.println("=" .repeat(60));
-        if (pedidos.isEmpty()) {
-            System.out.println("❌ Nenhum pedido registrado.");
-            return;
-        }
-        for (Pedido pedido : pedidos) {
-            System.out.printf("🛒 %s | %s | R$ %.2f | %s%n", 
-                pedido.getId(), pedido.getCliente().getNome(), pedido.getValorTotal(), pedido.getStatus());
-        }
-        System.out.println("=" .repeat(60));
+    public List<Cliente> getClientes() {
+        return vendedorService.getClienteRepo().findAll();
+    }
+
+    public List<Produto> getProdutosDisponiveis() {
+        return vendedorService.getVendedor().getFranquia().getEstoque().keySet().stream().toList();
+    }
+
+    public Cliente addCliente(String nome, String cpf, String email, String telefone, String endereco) {
+        return vendedorService.cadastrarCliente(nome, cpf, email, telefone, endereco);
+    }
+
+    public Pedido criarPedido(Cliente cliente, Map<Produto, Integer> produtos, TiposPagamento pagamento, TiposEntrega entrega) {
+        return vendedorService.registrarPedido(cliente, produtos, pagamento, entrega);
     }
 }

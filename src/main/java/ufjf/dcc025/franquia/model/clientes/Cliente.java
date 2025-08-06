@@ -36,7 +36,7 @@ public class Cliente implements Identifiable {
             pedidosDaFranquia.add(pedidoId);
         }
     }
-  
+
     public List<String> getPedidosDaFranquia(String franquiaId) {
         List<String> pedidos = pedidosPorFranquia.get(franquiaId);
         return pedidos != null ? new ArrayList<>(pedidos) : new ArrayList<>();
@@ -102,16 +102,21 @@ public class Cliente implements Identifiable {
 
     // Setters
     private void setId() {
-    	String id = "C" + cpf;
-    	this.id = id;
+        // O ID agora é baseado no CPF para garantir unicidade
+        String id = "C" + cpf;
+        this.id = id;
     }
-    
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public void setNome(String nome) {
         this.nome = nome;
     }
-    
+
     public void setCpf(String cpf) {
-    	this.cpf = cpf;
+        this.cpf = cpf;
     }
 
     public void setEmail(String email) {
@@ -128,7 +133,7 @@ public class Cliente implements Identifiable {
 
     @Override
     public String toString() {
-        return String.format("Cliente: %s (ID: %s) | Pedidos: %d | Franquias visitadas: %d", 
-                           nome, id, getTotalPedidos(), pedidosPorFranquia.keySet().size());
+        return String.format("Cliente: %s (ID: %s) | Pedidos: %d | Franquias visitadas: %d",
+                nome, id, getTotalPedidos(), pedidosPorFranquia.keySet().size());
     }
 }

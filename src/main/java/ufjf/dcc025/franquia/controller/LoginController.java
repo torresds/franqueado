@@ -9,9 +9,6 @@ import ufjf.dcc025.franquia.util.DataSeeder;
 
 import java.util.function.Consumer;
 
-/**
- * Controlador para a tela de login.
- */
 public class LoginController {
 
     private final FranquiaApp app;
@@ -22,23 +19,10 @@ public class LoginController {
         this.authService = authService;
     }
 
-    /**
-     * Tenta realizar o login do usuário ou executar comandos especiais.
-     * @param username O nome de usuário (email ou CPF).
-     * @param password A senha.
-     * @param onError Callback para executar em caso de erro.
-     */
     public void doLogin(String username, String password, Consumer<String> onError) {
-        // Checa por comandos secretos
         switch (username.toLowerCase()) {
-            case "_seed_initial":
-                app.runSeeder(DataSeeder.SeedScenario.INITIAL_SETUP);
-                return;
-            case "_seed_busy":
-                app.runSeeder(DataSeeder.SeedScenario.BUSY_MONTH);
-                return;
-            case "_seed_expansion":
-                app.runSeeder(DataSeeder.SeedScenario.NEW_EXPANSION);
+            case "_seed_realistic":
+                app.runSeeder(DataSeeder.SeedScenario.REALISTIC);
                 return;
             case "_clear":
                 app.clearDatabase();

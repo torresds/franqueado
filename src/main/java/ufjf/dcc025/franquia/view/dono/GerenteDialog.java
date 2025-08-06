@@ -1,23 +1,23 @@
-package ufjf.dcc025.franquia.view;
+package ufjf.dcc025.franquia.view.dono;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
-import ufjf.dcc025.franquia.model.usuarios.Vendedor;
+import ufjf.dcc025.franquia.model.usuarios.Gerente;
 import ufjf.dcc025.franquia.util.AlertFactory;
 
-public class VendedorDialog extends Dialog<Vendedor> {
+public class GerenteDialog extends Dialog<Gerente> {
 
-    private final PasswordField senhaField;
-    private final PasswordField confirmarSenhaField;
+    private PasswordField senhaField;
+    private PasswordField confirmarSenhaField;
 
-    public VendedorDialog() {
+    public GerenteDialog() {
         this(null);
     }
 
-    public VendedorDialog(Vendedor vendedor) {
-        setTitle(vendedor == null ? "Adicionar Novo Vendedor" : "Editar Vendedor");
-        setHeaderText(vendedor == null ? "Preencha os dados do novo vendedor." : "Altere os dados do vendedor.");
+    public GerenteDialog(Gerente gerente) {
+        setTitle(gerente == null ? "Adicionar Novo Gerente" : "Editar Gerente");
+        setHeaderText(gerente == null ? "Preencha os dados do novo gerente." : "Altere os dados do gerente.");
 
         ButtonType saveButtonType = new ButtonType("Salvar", ButtonBar.ButtonData.OK_DONE);
         getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
@@ -38,10 +38,11 @@ public class VendedorDialog extends Dialog<Vendedor> {
         confirmarSenhaField = new PasswordField();
         confirmarSenhaField.setPromptText("Confirmar Senha");
 
-        if (vendedor != null) {
-            nomeField.setText(vendedor.getNome());
-            cpfField.setText(vendedor.getCpf());
-            emailField.setText(vendedor.getEmail());
+        if (gerente != null) {
+            nomeField.setText(gerente.getNome());
+            cpfField.setText(gerente.getCpf());
+            emailField.setText(gerente.getEmail());
+            // A senha não é preenchida por segurança. Deixe em branco para manter a atual.
             senhaField.setPromptText("Nova senha (deixe em branco para manter)");
             confirmarSenhaField.setPromptText("Confirme a nova senha");
         }
@@ -61,36 +62,40 @@ public class VendedorDialog extends Dialog<Vendedor> {
 
         setResultConverter(dialogButton -> {
             if (dialogButton == saveButtonType) {
-                if (!validateInput(vendedor, nomeField, cpfField, emailField)) {
-                    return null;
+                if (!validateInput(gerente, nomeField, cpfField, emailField)) {
+                    return null; // Mantém o diálogo aberto
                 }
 
                 String senha = senhaField.getText();
-                if (senha.isBlank() && vendedor != null) {
-                    senha = vendedor.getSenha();
+                if (senha.isBlank() && gerente != null) {
+                    senha = gerente.getSenha(); // Mantém a senha antiga se o campo estiver vazio na edição
                 }
 
-                Vendedor resultVendedor = new Vendedor(nomeField.getText(), cpfField.getText(), emailField.getText(), senha, null);
-                return resultVendedor;
+                Gerente resultGerente = new Gerente(nomeField.getText(), cpfField.getText(), emailField.getText(), senha);
+                return resultGerente;
             }
             return null;
         });
     }
 
-    private boolean validateInput(Vendedor vendedor, TextField nome, TextField cpf, TextField email) {
+    private boolean validateInput(Gerente gerente, TextField nome, TextField cpf, TextField email) {
+        // Validação de campos vazios
         if (nome.getText().isBlank() || cpf.getText().isBlank() || email.getText().isBlank()) {
             AlertFactory.showError("Campos Obrigatórios", "Nome, CPF e E-mail não podem estar vazios.");
             return false;
         }
 
+        // Validação de senha
         String senha = senhaField.getText();
         String confirmarSenha = confirmarSenhaField.getText();
 
-        if (vendedor == null && senha.isBlank()) {
-            AlertFactory.showError("Senha Inválida", "A senha é obrigatória para novos vendedores.");
+        // Se for um novo gerente, a senha é obrigatória
+        if (gerente == null && senha.isBlank()) {
+            AlertFactory.showError("Senha Inválida", "A senha é obrigatória para novos gerentes.");
             return false;
         }
 
+        // Se uma nova senha foi digitada, ela deve ser válida e confirmada
         if (!senha.isBlank()) {
             if (senha.length() < 6) {
                 AlertFactory.showError("Senha Inválida", "A senha deve ter no mínimo 6 caracteres.");

@@ -1,7 +1,6 @@
 package ufjf.dcc025.franquia;
 
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import ufjf.dcc025.franquia.model.clientes.Cliente;
@@ -16,15 +15,16 @@ import ufjf.dcc025.franquia.persistence.EntityRepository;
 import ufjf.dcc025.franquia.service.AuthenticationService;
 import ufjf.dcc025.franquia.service.DonoService;
 import ufjf.dcc025.franquia.service.GerenteService;
+import ufjf.dcc025.franquia.service.VendedorService;
 import ufjf.dcc025.franquia.util.AlertFactory;
 import ufjf.dcc025.franquia.util.CssManager;
 import ufjf.dcc025.franquia.util.DataSeeder;
 import ufjf.dcc025.franquia.view.CreateOwnerView;
-import ufjf.dcc025.franquia.view.DonoDashboard.DonoDashboardView;
-import ufjf.dcc025.franquia.view.GerenteDashboardView;
+import ufjf.dcc025.franquia.view.dono.DonoDashboardView;
+import ufjf.dcc025.franquia.view.gerente.GerenteDashboardView;
 import ufjf.dcc025.franquia.view.LoginView;
 import ufjf.dcc025.franquia.view.MainView;
-import ufjf.dcc025.franquia.view.VendedorDashboardView;
+import ufjf.dcc025.franquia.view.vendedor.VendedorDashboardView;
 
 import java.util.concurrent.TimeUnit;
 
@@ -41,6 +41,7 @@ public class FranquiaApp extends Application {
     private AuthenticationService authService;
     private DonoService donoService;
     private GerenteService gerenteService;
+    private VendedorService vendedorService;
     private DataSeeder dataSeeder;
 
     // UI
@@ -142,11 +143,12 @@ public class FranquiaApp extends Application {
                 mainView.setDashboard(new DonoDashboardView(donoService));
                 break;
             case GERENTE:
-                this.gerenteService = new GerenteService((Gerente) usuario, vendedorRepo, pedidoRepo, franquiaRepo);
+                this.gerenteService = new GerenteService((Gerente) usuario, vendedorRepo, pedidoRepo, franquiaRepo, clienteRepo);
                 mainView.setDashboard(new GerenteDashboardView(gerenteService));
                 break;
             case VENDEDOR:
-                mainView.setDashboard(new VendedorDashboardView((Vendedor) usuario));
+                this.vendedorService = new VendedorService((Vendedor) usuario, pedidoRepo, clienteRepo);
+                mainView.setDashboard(new VendedorDashboardView(vendedorService));
                 break;
         }
         primaryStage.getScene().setRoot(mainView);
@@ -180,5 +182,6 @@ public class FranquiaApp extends Application {
     // Getters
     public DonoService getDonoService() { return donoService; }
     public GerenteService getGerenteService() { return gerenteService; }
+    public VendedorService getVendedorService() { return vendedorService; }
     public Usuario getUsuarioLogado() { return usuarioLogado; }
 }

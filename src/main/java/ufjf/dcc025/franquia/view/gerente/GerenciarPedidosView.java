@@ -1,4 +1,4 @@
-package ufjf.dcc025.franquia.view;
+package ufjf.dcc025.franquia.view.gerente;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -16,6 +16,7 @@ import ufjf.dcc025.franquia.service.GerenteService;
 import ufjf.dcc025.franquia.util.AlertFactory;
 import ufjf.dcc025.franquia.util.ComponentFactory;
 import ufjf.dcc025.franquia.util.IconManager;
+import ufjf.dcc025.franquia.view.common.PlaceholderView;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;

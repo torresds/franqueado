@@ -204,11 +204,18 @@ public class DonoService {
                 .collect(Collectors.toList());
     }
 
+    public List<Vendedor> getTopVendedores(int limit) {
+        return rankingVendedores().stream()
+                .limit(limit)
+                .collect(Collectors.toList());
+    }
+
     public List<Franquia> listarFranquiasPorDesempenho() {
         return franquiasRepository.findAll().stream()
                 .sorted(Comparator.comparingDouble(Franquia::getReceita).reversed())
                 .collect(Collectors.toList());
     }
+
 
     //Getters
     public Dono getDono() {

@@ -1,4 +1,4 @@
-package ufjf.dcc025.franquia.view;
+package ufjf.dcc025.franquia.view.gerente;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -16,11 +16,13 @@ import ufjf.dcc025.franquia.util.AlertFactory;
 import ufjf.dcc025.franquia.util.ComponentFactory;
 import ufjf.dcc025.franquia.util.IconManager;
 import ufjf.dcc025.franquia.util.Spacer;
+import ufjf.dcc025.franquia.view.common.AtualizarEstoqueDialog;
+import ufjf.dcc025.franquia.view.common.PlaceholderView;
+import ufjf.dcc025.franquia.view.common.ProdutoDialog;
 
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 public class GerenciarEstoqueView extends VBox {
 

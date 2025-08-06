@@ -1,4 +1,4 @@
-package ufjf.dcc025.franquia.view;
+package ufjf.dcc025.franquia.view.gerente;
 
 import javafx.geometry.Insets;
 import javafx.scene.layout.GridPane;
@@ -8,6 +8,7 @@ import ufjf.dcc025.franquia.model.usuarios.Gerente;
 import ufjf.dcc025.franquia.service.GerenteService;
 import ufjf.dcc025.franquia.util.ComponentFactory;
 import ufjf.dcc025.franquia.util.IconManager;
+import ufjf.dcc025.franquia.view.common.PlaceholderView;
 
 public class GerenteDashboardView extends VBox {
 

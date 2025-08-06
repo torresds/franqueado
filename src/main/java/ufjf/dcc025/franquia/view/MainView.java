@@ -15,8 +15,13 @@ import ufjf.dcc025.franquia.model.usuarios.Usuario;
 import ufjf.dcc025.franquia.util.ComponentFactory;
 import ufjf.dcc025.franquia.util.IconManager;
 import ufjf.dcc025.franquia.util.Spacer;
-import ufjf.dcc025.franquia.view.DonoDashboard.*;
-import ufjf.dcc025.franquia.view.*;
+import ufjf.dcc025.franquia.view.dono.DesempenhoView;
+import ufjf.dcc025.franquia.view.dono.DonoDashboardView;
+import ufjf.dcc025.franquia.view.dono.GerenciarFranquiasView;
+import ufjf.dcc025.franquia.view.dono.GerenciarGerentesView;
+import ufjf.dcc025.franquia.view.gerente.*;
+import ufjf.dcc025.franquia.view.vendedor.RegistrarPedidoView;
+import ufjf.dcc025.franquia.view.vendedor.VendedorDashboardView;
 
 public class MainView extends BorderPane {
 
@@ -28,10 +33,8 @@ public class MainView extends BorderPane {
     public MainView(FranquiaApp app) {
         this.app = app;
         this.getStyleClass().add("main-view");
-
         this.contentArea = new StackPane();
         this.contentArea.getStyleClass().add("content-area");
-
         this.sidebar = createSidebar();
 
         ScrollPane scrollPane = new ScrollPane(contentArea);
@@ -49,27 +52,19 @@ public class MainView extends BorderPane {
 
         Text appTitle = new Text("Franqueado");
         appTitle.getStyleClass().add("sidebar-title");
-
         VBox.setMargin(appTitle, new Insets(0, 0, 10, 0));
         sidebarPane.getChildren().add(appTitle);
 
         Usuario usuario = app.getUsuarioLogado();
         if (usuario != null) {
             switch (usuario.getTipoUsuario()) {
-                case DONO:
-                    createDonoMenu(sidebarPane);
-                    break;
-                case GERENTE:
-                    createGerenteMenu(sidebarPane);
-                    break;
-                case VENDEDOR:
-                    // createVendedorMenu(sidebarPane);
-                    break;
+                case DONO -> createDonoMenu(sidebarPane);
+                case GERENTE -> createGerenteMenu(sidebarPane);
+                case VENDEDOR -> createVendedorMenu(sidebarPane);
             }
         }
 
         sidebarPane.getChildren().add(new Spacer());
-
         Button btnLogout = ComponentFactory.createMenuButton("Sair", IconManager.LOGOUT, () -> app.showLoginScreen());
         sidebarPane.getChildren().add(btnLogout);
 
@@ -91,9 +86,16 @@ public class MainView extends BorderPane {
         ToggleButton btnVendedores = createMenuToggle("Vendedores", IconManager.USERS, () -> setContent(new GerenciarVendedoresView(app.getGerenteService())));
         ToggleButton btnEstoque = createMenuToggle("Estoque", IconManager.BOX_PACKAGE, () -> setContent(new GerenciarEstoqueView(app.getGerenteService())));
         ToggleButton btnPedidos = createMenuToggle("Pedidos", IconManager.CLIPBOARD, () -> setContent(new GerenciarPedidosView(app.getGerenteService())));
-        ToggleButton btnRelatorios = createMenuToggle("Relatórios", IconManager.CHART, () -> {}); // Placeholder
+        ToggleButton btnRelatorios = createMenuToggle("Relatórios", IconManager.CHART, () -> setContent(new RelatoriosView(app.getGerenteService())));
 
         container.getChildren().addAll(btnHome, btnVendedores, btnEstoque, btnPedidos, btnRelatorios);
+        btnHome.setSelected(true);
+    }
+    private void createVendedorMenu(VBox container) {
+        ToggleButton btnHome = createMenuToggle("Dashboard", IconManager.HOME, () -> setContent(new VendedorDashboardView(app.getVendedorService())));
+        ToggleButton btnNovoPedido = createMenuToggle("Novo Pedido", IconManager.PLUS, () -> setContent(new RegistrarPedidoView(app.getVendedorService())));
+
+        container.getChildren().addAll(btnHome, btnNovoPedido);
         btnHome.setSelected(true);
     }
 

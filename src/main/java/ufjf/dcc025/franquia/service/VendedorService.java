@@ -1,3 +1,4 @@
+// FILE: src/main/java/ufjf/dcc025/franquia/service/VendedorService.java
 package ufjf.dcc025.franquia.service;
 
 import ufjf.dcc025.franquia.enums.TiposEntrega;
@@ -19,23 +20,23 @@ public class VendedorService {
     private final EntityRepository<Pedido> pedidoRepository;
     private final EntityRepository<Cliente> clienteRepository;
 
-    public VendedorService(Vendedor vendedor, EntityRepository<Pedido> pedidoRepository, 
-                          EntityRepository<Cliente> clienteRepository) {
+    public VendedorService(Vendedor vendedor, EntityRepository<Pedido> pedidoRepository,
+                           EntityRepository<Cliente> clienteRepository) {
         this.vendedor = vendedor;
         this.pedidoRepository = pedidoRepository;
         this.clienteRepository = clienteRepository;
     }
 
-    // Gerenciamento de Pedidos
-    public Pedido registrarPedido(Cliente cliente, Map<Produto, Integer> produtos, 
-                                 TiposPagamento formaPagamento, TiposEntrega metodoEntrega) {
-        String pedidoId = "P" + System.currentTimeMillis();
-        Pedido novoPedido = new Pedido(cliente, produtos, vendedor.getFranquia(), formaPagamento, 
-                                       metodoEntrega, pedidoId, vendedor);
-        vendedor.adicionarPedidoId(pedidoId);
-        vendedor.getFranquia().getGerente().adicionarPedidoPendente(pedidoId);
-        vendedor.getFranquia().adicionarPedido(pedidoId);
-        cliente.adicionarPedido(pedidoId, vendedor.getFranquia().getId());
+    public Pedido registrarPedido(Cliente cliente, Map<Produto, Integer> produtos,
+                                  TiposPagamento formaPagamento, TiposEntrega metodoEntrega) {
+        Pedido novoPedido = new Pedido(cliente, produtos, vendedor.getFranquia(), formaPagamento,
+                metodoEntrega, vendedor);
+
+        vendedor.adicionarPedidoId(novoPedido.getId());
+        vendedor.getFranquia().getGerente().adicionarPedidoPendente(novoPedido.getId());
+        vendedor.getFranquia().adicionarPedido(novoPedido.getId());
+        cliente.adicionarPedido(novoPedido.getId(), vendedor.getFranquia().getId());
+
         pedidoRepository.upsert(novoPedido);
         pedidoRepository.saveAllAsync();
         clienteRepository.upsert(cliente);
@@ -45,11 +46,11 @@ public class VendedorService {
 
     public Pedido alterarPedido(String pedidoId, Map<Produto, Integer> produtosQuantidade) {
         Pedido pedidoOriginal = pedidoRepository.findById(pedidoId)
-            .orElseThrow(() -> new EntidadeNaoEncontradaException(pedidoId));
-        Pedido copia = new Pedido(pedidoOriginal.getCliente(), new HashMap<>(produtosQuantidade), 
-                                  pedidoOriginal.getFranquia(), pedidoOriginal.getFormaPagamento(), 
-                                  pedidoOriginal.getMetodoEntrega(), pedidoOriginal.getId(), 
-                                  pedidoOriginal.getVendedor());
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(pedidoId));
+
+        Pedido copia = new Pedido(pedidoOriginal);
+        copia.setProdutosQuantidade(new HashMap<>(produtosQuantidade));
+        copia.atualizarValores();
         vendedor.getFranquia().getGerente().adicionarAlteracaoPedido(copia);
         pedidoRepository.upsert(copia);
         pedidoRepository.saveAllAsync();
@@ -58,10 +59,11 @@ public class VendedorService {
 
     public Pedido alterarMetodoEntrega(String pedidoId, TiposEntrega metodoEntrega) {
         Pedido pedidoOriginal = pedidoRepository.findById(pedidoId)
-            .orElseThrow(() -> new EntidadeNaoEncontradaException(pedidoId));
-        Pedido copia = new Pedido(pedidoOriginal.getCliente(), new HashMap<>(pedidoOriginal.getProdutosQuantidade()), 
-                                  pedidoOriginal.getFranquia(), pedidoOriginal.getFormaPagamento(), 
-                                  metodoEntrega, pedidoOriginal.getId(), pedidoOriginal.getVendedor());
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(pedidoId));
+
+        Pedido copia = new Pedido(pedidoOriginal);
+        copia.setMetodoEntrega(metodoEntrega);
+
         vendedor.getFranquia().getGerente().adicionarAlteracaoPedido(copia);
         pedidoRepository.upsert(copia);
         pedidoRepository.saveAllAsync();
@@ -93,15 +95,15 @@ public class VendedorService {
 
     public void removerCliente(String clienteId) {
         clienteRepository.findById(clienteId)
-            .orElseThrow(() -> new EntidadeNaoEncontradaException(clienteId));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(clienteId));
         clienteRepository.delete(clienteId);
         clienteRepository.saveAllAsync();
     }
 
-    public Cliente editarCliente(String clienteId, String novoNome, String novoCpf, String novoEmail, 
-                                String novoTelefone, String novoEndereco) {
+    public Cliente editarCliente(String clienteId, String novoNome, String novoCpf, String novoEmail,
+                                 String novoTelefone, String novoEndereco) {
         Cliente cliente = clienteRepository.findById(clienteId)
-            .orElseThrow(() -> new EntidadeNaoEncontradaException(clienteId));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(clienteId));
         cliente.setNome(novoNome);
         cliente.setCpf(novoCpf);
         cliente.setEmail(novoEmail);
@@ -112,16 +114,13 @@ public class VendedorService {
         return cliente;
     }
 
-    //getters
     public Vendedor getVendedor() {
-    	return vendedor;
-    }   
+        return vendedor;
+    }
     public EntityRepository<Pedido> getPedidoRepo() {
-    	return pedidoRepository;
+        return pedidoRepository;
     }
     public EntityRepository<Cliente> getClienteRepo() {
-    	return clienteRepository;
+        return clienteRepository;
     }
-
-
 }
