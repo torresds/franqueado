@@ -1,4 +1,3 @@
-// FILE: src/main/java/ufjf/dcc025/franquia/view/GerenciarEstoqueView.java
 package ufjf.dcc025.franquia.view;
 
 import javafx.collections.FXCollections;
@@ -38,6 +37,11 @@ public class GerenciarEstoqueView extends VBox {
 
         Text header = new Text("Gerenciar Estoque");
         header.getStyleClass().add("page-header");
+
+        if (gerenteService.getFranquia() == null) {
+            getChildren().addAll(header, new PlaceholderView("Nenhuma franquia atribuída.", "Você não pode gerenciar o estoque sem estar alocado a uma franquia."));
+            return;
+        }
 
         Button addButton = new Button("Adicionar Produto");
         addButton.getStyleClass().add("action-button");

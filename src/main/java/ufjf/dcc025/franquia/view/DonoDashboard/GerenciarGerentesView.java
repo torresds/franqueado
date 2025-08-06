@@ -1,4 +1,3 @@
-// FILE: src/main/java/ufjf/dcc025/franquia/view/GerenciarGerentesView.java
 package ufjf.dcc025.franquia.view.DonoDashboard;
 
 import javafx.collections.FXCollections;

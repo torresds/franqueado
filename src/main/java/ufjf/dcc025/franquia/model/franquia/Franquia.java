@@ -1,4 +1,3 @@
-// FILE: src/main/java/ufjf/dcc025/franquia/model/franquia/Franquia.java
 package ufjf.dcc025.franquia.model.franquia;
 
 import java.util.ArrayList;

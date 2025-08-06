@@ -1,4 +1,3 @@
-// FILE: src/main/java/ufjf/dcc025/franquia/view/CreateOwnerView.java
 package ufjf.dcc025.franquia.view;
 
 import javafx.geometry.Pos;

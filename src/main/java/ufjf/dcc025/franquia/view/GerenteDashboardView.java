@@ -20,18 +20,22 @@ public class GerenteDashboardView extends VBox {
         setPadding(new Insets(10));
         setSpacing(25);
 
-        // Cabeçalho
-        Text header = new Text("Dashboard da Franquia");
+        Text header = new Text("Dashboard");
         header.getStyleClass().add("page-header");
 
-        String nomeFranquia = gerente.getFranquia() != null ? gerente.getFranquia().getNome() : "Franquia não definida";
+        String nomeFranquia = gerente.getFranquia() != null ? gerente.getFranquia().getNome() : "Nenhuma franquia atribuída";
         Text subheader = new Text("Visão geral da unidade: " + nomeFranquia);
         subheader.getStyleClass().add("page-subheader");
 
-        // Grid de Indicadores (placeholders por enquanto)
-        GridPane indicatorsGrid = createIndicatorsGrid();
+        getChildren().addAll(header, subheader);
 
-        getChildren().addAll(header, subheader, indicatorsGrid);
+        // Só mostra os indicadores se o gerente estiver em uma franquia
+        if (gerente.getFranquia() != null) {
+            GridPane indicatorsGrid = createIndicatorsGrid();
+            getChildren().add(indicatorsGrid);
+        } else {
+            getChildren().add(new PlaceholderView("Você não está atribuído a nenhuma franquia.", "Contate o Dono do sistema para ser alocado a uma unidade."));
+        }
     }
 
     private GridPane createIndicatorsGrid() {

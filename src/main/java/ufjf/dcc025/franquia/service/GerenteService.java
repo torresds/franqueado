@@ -9,6 +9,7 @@ import ufjf.dcc025.franquia.persistence.EntityRepository;
 import ufjf.dcc025.franquia.exception.*;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -112,6 +113,71 @@ public class GerenteService {
         franquiaRepository.upsert(franquiaGerente);
         franquiaRepository.saveAllAsync();
     }
+
+    public List<Pedido> listarPedidosDaFranquia() {
+        if (gerente.getFranquia() == null) {
+            return new ArrayList<>();
+        }
+        String franquiaId = gerente.getFranquia().getId();
+        return pedidoRepository.findAll().stream()
+                .filter(p -> p.getFranquia().getId().equals(franquiaId))
+                .sorted(Comparator.comparing(Pedido::getData).reversed()) // Ordena por mais recente
+                .collect(Collectors.toList());
+    }
+
+    public Pedido aceitarPedido(String pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(pedidoId));
+
+        if (pedido.isPendente()) {
+            pedido.aprovarPedido();
+            Map<Produto, Integer> produtos = pedido.getProdutosQuantidade();
+            for (Map.Entry<Produto, Integer> entry : produtos.entrySet()) {
+                gerente.getFranquia().atualizarEstoque(entry.getKey(), -entry.getValue());
+            }
+            pedido.getVendedor().atualizarTotalVendas(pedido.getValorTotal());
+            pedido.getFranquia().atualizarReceita(pedido.getValorTotal());
+
+            pedidoRepository.upsert(pedido);
+            franquiaRepository.upsert(gerente.getFranquia());
+            vendedorRepository.upsert(pedido.getVendedor());
+
+            // Salva tudo de forma assíncrona
+            pedidoRepository.saveAllAsync();
+            franquiaRepository.saveAllAsync();
+            vendedorRepository.saveAllAsync();
+        }
+        return pedido;
+    }
+
+    public Pedido cancelarPedido(String pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(pedidoId));
+
+        if (pedido.isAprovado()) {
+            // Devolve os produtos ao estoque
+            Map<Produto, Integer> produtos = pedido.getProdutosQuantidade();
+            for (Map.Entry<Produto, Integer> entry : produtos.entrySet()) {
+                gerente.getFranquia().atualizarEstoque(entry.getKey(), entry.getValue());
+            }
+            // Estorna os valores
+            pedido.getVendedor().atualizarTotalVendas(-pedido.getValorTotal());
+            pedido.getFranquia().atualizarReceita(-pedido.getValorTotal());
+        }
+
+        pedido.cancelarPedido();
+
+        pedidoRepository.upsert(pedido);
+        franquiaRepository.upsert(gerente.getFranquia());
+        vendedorRepository.upsert(pedido.getVendedor());
+
+        pedidoRepository.saveAllAsync();
+        franquiaRepository.saveAllAsync();
+        vendedorRepository.saveAllAsync();
+
+        return pedido;
+    }
+
 
     public Gerente getGerente() {
         return gerente;

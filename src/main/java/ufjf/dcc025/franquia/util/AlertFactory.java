@@ -1,4 +1,3 @@
-// FILE: src/main/java/ufjf/dcc025/franquia/util/AlertFactory.java
 package ufjf.dcc025.franquia.util;
 
 import javafx.scene.control.Alert;

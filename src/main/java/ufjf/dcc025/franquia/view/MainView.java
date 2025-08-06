@@ -90,12 +90,13 @@ public class MainView extends BorderPane {
         ToggleButton btnHome = createMenuToggle("Dashboard", IconManager.HOME, () -> setContent(new GerenteDashboardView(app.getGerenteService())));
         ToggleButton btnVendedores = createMenuToggle("Vendedores", IconManager.USERS, () -> setContent(new GerenciarVendedoresView(app.getGerenteService())));
         ToggleButton btnEstoque = createMenuToggle("Estoque", IconManager.BOX_PACKAGE, () -> setContent(new GerenciarEstoqueView(app.getGerenteService())));
-        ToggleButton btnPedidos = createMenuToggle("Pedidos", IconManager.CLIPBOARD, () -> {}); // Placeholder
+        ToggleButton btnPedidos = createMenuToggle("Pedidos", IconManager.CLIPBOARD, () -> setContent(new GerenciarPedidosView(app.getGerenteService())));
         ToggleButton btnRelatorios = createMenuToggle("Relatórios", IconManager.CHART, () -> {}); // Placeholder
 
         container.getChildren().addAll(btnHome, btnVendedores, btnEstoque, btnPedidos, btnRelatorios);
         btnHome.setSelected(true);
     }
+
 
     private ToggleButton createMenuToggle(String text, String svgPath, Runnable action) {
         ToggleButton button = new ToggleButton(text);
@@ -114,7 +115,6 @@ public class MainView extends BorderPane {
         this.contentArea.getChildren().clear();
         this.contentArea.getChildren().add(contentNode);
     }
-
     public void setDashboard(Node contentNode) {
         setContent(contentNode);
     }

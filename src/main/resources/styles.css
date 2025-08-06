@@ -283,3 +283,38 @@
     -fx-background-color: #ecf0f1;
     -fx-text-fill: -app-text-secondary;
 }
+
+
+.table-action-button:hover .icon-pane {
+    -fx-fill: -app-text-primary;
+}
+
+/* --- TAGS DE STATUS --- */
+.status-tag {
+    -fx-padding: 4px 8px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.status-aprovado {
+    -fx-background-color: #e8f5e9; /* Verde claro */
+    -fx-text-fill: #2e7d32;      /* Verde escuro */
+}
+
+.status-pendente {
+    -fx-background-color: #fff3e0; /* Laranja claro */
+    -fx-text-fill: #ef6c00;      /* Laranja escuro */
+}
+
+.status-cancelado {
+    -fx-background-color: #ffebee; /* Vermelho claro */
+    -fx-text-fill: #c62828;      /* Vermelho escuro */
+}
+
+
+/* --- DIALOGS --- */
+.dialog-pane {
+    -fx-background-color: -app-bg-color;
+}
