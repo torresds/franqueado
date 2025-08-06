@@ -1,35 +1,38 @@
-package ufjf.dcc025.franquia.view;
 
+package ufjf.dcc025.franquia.view;
 
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import ufjf.dcc025.franquia.FranquiaApp;
+import ufjf.dcc025.franquia.controller.LoginController;
+import ufjf.dcc025.franquia.service.AuthenticationService;
 
 public class LoginView extends VBox {
-    public LoginView(FranquiaApp app) {
+
+    private final LoginController controller;
+
+    public LoginView(FranquiaApp app, AuthenticationService authService) {
         super(20);
+        this.controller = new LoginController(app, authService);
+
         this.setAlignment(Pos.CENTER);
         this.getStyleClass().add("login-view");
 
-        Text title = new Text("Gerenciador de franquias");
-        title.setFont(Font.font("System", FontWeight.BOLD, 48));
-        title.setFill(Color.web("#2c3e50"));
+        Text title = new Text("Gerenciador de Franquias");
+        title.getStyleClass().add("login-title");
 
         Text subtitle = new Text("Sistema de gestão integrado");
-        subtitle.setFont(Font.font("System", 24));
-        subtitle.setFill(Color.web("#34495e"));
+        subtitle.getStyleClass().add("login-subtitle");
 
         VBox formContainer = new VBox(15);
         formContainer.setMaxWidth(400);
         formContainer.setAlignment(Pos.CENTER);
-        formContainer.getStyleClass().add("form-container");
+        formContainer.getStyleClass().add("login-form-container");
 
         TextField emailField = new TextField();
         emailField.setPromptText("E-mail ou CPF");
@@ -39,22 +42,30 @@ public class LoginView extends VBox {
         passwordField.setPromptText("Senha");
         passwordField.getStyleClass().add("login-field");
 
-        Button donoLoginBtn = new Button("Entrar como dono");
-        donoLoginBtn.getStyleClass().add("login-button");
-       // donoLoginBtn.setOnAction(e -> app.showDonoDashboard());
+        Label errorLabel = new Label();
+        errorLabel.getStyleClass().add("error-label");
 
-        Button gerenteLoginBtn = new Button("Entrar como gerente");
-        gerenteLoginBtn.getStyleClass().add("login-button");
-       //  gerenteLoginBtn.setOnAction(e -> app.showGerenteDashboard());
+        Button loginBtn = new Button("Entrar");
+        loginBtn.getStyleClass().add("login-button");
+        loginBtn.setMaxWidth(Double.MAX_VALUE);
 
-        Button vendedorLoginBtn = new Button("Entrar como vendedor");
-        vendedorLoginBtn.getStyleClass().add("login-button");
-       // vendedorLoginBtn.setOnAction(e -> app.showVendedorDashboard());
+        // Ação do botão de login
+        loginBtn.setOnAction(e -> {
+            errorLabel.setText(""); // Limpa erros anteriores
+            controller.doLogin(
+                    emailField.getText(),
+                    passwordField.getText(),
+                    // Callback de erro
+                    errorMessage -> errorLabel.setText(errorMessage)
+            );
+        });
 
-        formContainer.getChildren().addAll(emailField, passwordField, donoLoginBtn, gerenteLoginBtn, vendedorLoginBtn);
+        // Permite login com a tecla Enter
+        passwordField.setOnAction(e -> loginBtn.fire());
+        emailField.setOnAction(e -> passwordField.requestFocus());
+
+        formContainer.getChildren().addAll(emailField, passwordField, errorLabel, loginBtn);
 
         this.getChildren().addAll(title, subtitle, formContainer);
     }
 }
-
-
