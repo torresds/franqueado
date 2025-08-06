@@ -1,3 +1,4 @@
+// FILE: src/main/java/ufjf/dcc025/franquia/model/usuarios/Gerente.java
 package ufjf.dcc025.franquia.model.usuarios;
 
 import ufjf.dcc025.franquia.enums.TipoUsuario;
@@ -8,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Gerente extends Usuario {
-    private Franquia franquia;
+    private transient Franquia franquia; // Corrigido: Marcado como transient
     private List<String> pedidosPendentesId;
     private List<String> pedidosParaCancelarId;
     private List<Pedido> alteracoesPedidos;
@@ -66,6 +67,7 @@ public class Gerente extends Usuario {
 
     @Override
     public String toString() {
-        return "Gerente: " + getNome() + " | Franquia Gerenciada: " + franquia.getNome();
+        String nomeFranquia = (franquia != null) ? franquia.getNome() : "Nenhuma";
+        return "Gerente: " + getNome() + " | Franquia Gerenciada: " + nomeFranquia;
     }
 }

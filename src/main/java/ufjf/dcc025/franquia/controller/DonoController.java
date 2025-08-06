@@ -1,5 +1,7 @@
+// FILE: src/main/java/ufjf/dcc025/franquia/controller/DonoController.java
 package ufjf.dcc025.franquia.controller;
 
+import ufjf.dcc025.franquia.model.usuarios.Gerente;
 import ufjf.dcc025.franquia.service.DonoService;
 import ufjf.dcc025.franquia.model.franquia.Franquia;
 import ufjf.dcc025.franquia.model.usuarios.Vendedor;
@@ -14,79 +16,51 @@ public class DonoController {
         this.donoService = donoService;
     }
 
-    public void visualizarFranquiasSemGerente() {
-        List<Franquia> franquiasSemGerente = donoService.checarFranquias();
-        System.out.println("📍 FRANQUIAS SEM GERENTE");
-        System.out.println("=" .repeat(60));
-        if (franquiasSemGerente.isEmpty()) {
-            System.out.println("✅ Todas as franquias possuem gerente.");
-        } else {
-            for (Franquia franquia : franquiasSemGerente) {
-                System.out.printf("⚠️ %s | Endereço: %s%n", franquia.getNome(), franquia.getEndereco());
-            }
-        }
-        System.out.println("=" .repeat(60));
+    // MÉTODOS PARA A VIEW - FRANQUIAS
+
+    public List<Franquia> getFranquias() {
+        return donoService.listarFranquias();
     }
 
-    public void visualizarDesempenhoGeral() {
-        double faturamento = donoService.calcularFaturamentoBruto();
-        int totalPedidos = donoService.calcularTotalPedidos();
-        double ticketMedio = donoService.calcularTicketMedio();
-        Map<String, Double> desempenho = donoService.listarFranquiasPorDesempenho();
-
-        System.out.println("📊 DESEMPENHO GERAL DAS FRANQUIAS");
-        System.out.println("=" .repeat(60));
-        System.out.printf("💰 Faturamento Bruto Total: R$ %.2f%n", faturamento);
-        System.out.printf("🛒 Total de Pedidos: %d%n", totalPedidos);
-        System.out.printf("🎯 Ticket Médio: R$ %.2f%n", ticketMedio);
-        System.out.println("-" .repeat(60));
-        System.out.println("🏆 RANKING DE FRANQUIAS POR RECEITA");
-        int posicao = 1;
-        for (Map.Entry<String, Double> entry : desempenho.entrySet()) {
-            String medalha = posicao == 1 ? "🥇" : posicao == 2 ? "🥈" : posicao == 3 ? "🥉" : "  ";
-            System.out.printf("%s %dº %s - R$ %.2f%n", medalha, posicao++, entry.getKey(), entry.getValue());
-        }
-        System.out.println("=" .repeat(60));
+    public void addFranquia(String nome, String endereco, String gerenteId) {
+        donoService.cadastrarFranquia(nome, endereco, gerenteId);
     }
 
-    public void visualizarRankingVendedores() {
-        List<String> ranking = donoService.rankingVendedores();
-        System.out.println("🏆 RANKING GERAL DE VENDEDORES");
-        System.out.println("=" .repeat(60));
-        if (ranking.isEmpty()) {
-            System.out.println("❌ Nenhum vendedor encontrado.");
-        } else {
-            int posicao = 1;
-            for (String vendedorId : ranking) {
-                Vendedor vendedor = donoService.getVendedorRepo().findById(vendedorId).orElse(null);
-                if (vendedor != null) {
-                    String medalha = posicao == 1 ? "🥇" : posicao == 2 ? "🥈" : posicao == 3 ? "🥉" : "  ";
-                    System.out.printf("%s %dº %s - R$ %.2f%n", 
-                        medalha, posicao++, vendedor.getNome(), vendedor.getTotalVendas());
-                }
-            }
-        }
-        System.out.println("=" .repeat(60));
+    public void updateFranquia(String id, String nome, String endereco) {
+        donoService.atualizarFranquia(id, nome, endereco);
     }
 
-    public void visualizarRankingVendedoresPorFranquia(String franquiaId) {
-        List<String> ranking = donoService.rankingVendedoresPorFranquia(franquiaId);
-        Franquia franquia = donoService.getFranquiaRepo().findById(franquiaId).orElse(null);
-        System.out.printf("🏆 RANKING DE VENDEDORES - %s%n", franquia != null ? franquia.getNome().toUpperCase() : "FRANQUIA DESCONHECIDA");
-        System.out.println("=" .repeat(60));
-        if (ranking.isEmpty()) {
-            System.out.println("❌ Nenhum vendedor encontrado.");
-        } else {
-            int posicao = 1;
-            for (String vendedorId : ranking) {
-                Vendedor vendedor = donoService.getVendedorRepo().findById(vendedorId).orElse(null);
-                if (vendedor != null) {
-                    String medalha = posicao == 1 ? "🥇" : posicao == 2 ? "🥈" : posicao == 3 ? "🥉" : "  ";
-                    System.out.printf("%s %dº %s - R$ %.2f%n", 
-                        medalha, posicao++, vendedor.getNome(), vendedor.getTotalVendas());
-                }
-            }
+    public void deleteFranquia(String id) {
+        donoService.removerFranquia(id);
+    }
+
+    // MÉTODOS PARA A VIEW - GERENTES
+
+    public List<Gerente> getGerentes() {
+        return donoService.listarGerentes();
+    }
+
+    public void addGerente(String nome, String cpf, String email, String senha) {
+        donoService.cadastrarGerente(nome, cpf, email, senha);
+    }
+
+    public void updateGerente(String id, String nome, String cpf, String email, String senha) {
+        // A atualização de franquia é tratada separadamente
+        donoService.atualizarGerente(id, nome, cpf, email, senha, null);
+    }
+
+    public void deleteGerente(String id) {
+        donoService.removerGerente(id);
+    }
+
+    public void assignManagerToFranchise(String gerenteId, String franquiaId) {
+        donoService.setGerenteFranquia(franquiaId, gerenteId);
+    }
+
+    public void unassignManager(String gerenteId) {
+        Gerente gerente = donoService.getGerenteRepo().findById(gerenteId).orElse(null);
+        if (gerente != null && gerente.getFranquia() != null) {
+            donoService.removerGerenteDaFranquia(gerente.getFranquia().getId());
         }
-        System.out.println("=" .repeat(60));
     }
 }

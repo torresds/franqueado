@@ -1,3 +1,4 @@
+// FILE: src/main/java/ufjf/dcc025/franquia/model/franquia/Franquia.java
 package ufjf.dcc025.franquia.model.franquia;
 
 import java.util.ArrayList;
@@ -20,23 +21,23 @@ public class Franquia implements Identifiable {
     private String nome;
     private String endereco;
     private Gerente gerente;
-    private List<Vendedor> vendedores;
+    private transient List<Vendedor> vendedores; // Corrigido: Marcado como transient
     private List<String> pedidosId;
     private Map<Produto, Integer> estoque;
     private double receita;
 
-    public Franquia(String nome, String endereco, String gerenteId, EntityRepository<Gerente> gerentesValidos) {
+    public Franquia(String nome, String endereco, Gerente gerente) {
         this.nome = nome;
         setId();
         this.endereco = endereco;
-        setGerente(gerenteId, gerentesValidos);
+        this.gerente = gerente;
         this.vendedores = new ArrayList<>();
         this.pedidosId = new ArrayList<>();
         this.estoque = new HashMap<>();
         this.receita = 0.0;
     }
 
- //------------ GERENCIAMENTO DE FATURAMENTO ------------
+    //------------ GERENCIAMENTO DE FATURAMENTO ------------
 
     public void atualizarReceita(double valor) {
         this.receita += valor;
@@ -46,51 +47,56 @@ public class Franquia implements Identifiable {
         List<Pedido> pedidos = pedidosValidos.findAll().stream()
                 .filter(pedido -> pedido.getFranquia().getId().equals(this.id))
                 .collect(Collectors.toList());
-        
+
         if (pedidos.isEmpty()) {
             return 0.0;
         }
-        
+
         double totalVendas = pedidos.stream()
                 .mapToDouble(Pedido::getValorTotal)
                 .sum();
-        
+
         return totalVendas / pedidos.size();
     }
-    
- //------------ GERENCIAMENTO DE VENDEDORES E PEDIDOS ------------ 
+
+    //------------ GERENCIAMENTO DE VENDEDORES E PEDIDOS ------------
 
     public void adicionarVendedor(Vendedor vendedor) {
+        if (this.vendedores == null) {
+            this.vendedores = new ArrayList<>();
+        }
         if (!vendedores.contains(vendedor)) {
             vendedores.add(vendedor);
         }
     }
 
     public void removerVendedor(Vendedor vendedor) {
-        vendedores.remove(vendedor);
+        if (this.vendedores != null) {
+            vendedores.remove(vendedor);
+        }
     }
-    
+
     public void adicionarPedido(String pedidoId) {
-    	if (!pedidosId.contains(pedidoId)) {
-    		pedidosId.add(pedidoId);
-    	}
+        if (!pedidosId.contains(pedidoId)) {
+            pedidosId.add(pedidoId);
+        }
     }
-    
+
     public List<Pedido> listarPedidos(EntityRepository<Pedido> pedidosValidos){
-    	List<Pedido> pedidos = new ArrayList<>();
-    	for (String id : this.pedidosId) {
-    		pedidos.add(pedidosValidos.findById(id).orElse(null));
-    	}
-    	return pedidos;
+        List<Pedido> pedidos = new ArrayList<>();
+        for (String id : this.pedidosId) {
+            pedidos.add(pedidosValidos.findById(id).orElse(null));
+        }
+        return pedidos;
     }
- //------------ GERENCIAMENTO DE ESTOQUE ------------  
+    //------------ GERENCIAMENTO DE ESTOQUE ------------
 
     public void adicionarProduto(Produto produto, int quantidade) {
         if (estoque.containsKey(produto)) {
             estoque.put(produto, estoque.get(produto) + quantidade);
         } else {
             estoque.put(produto, quantidade);
-        }  
+        }
     }
 
     public void removerProduto(Produto produto) {
@@ -130,8 +136,8 @@ public class Franquia implements Identifiable {
             throw new DadosInvalidosException("Produto não disponível em estoque.");
         }
     }
-    
-  //------------ GERENCIAMENTO DE RELATÓRIOS ------------
+
+    //------------ GERENCIAMENTO DE RELATÓRIOS ------------
 
     public List<String> gerarRelatorioVendas() {
         return new ArrayList<>(pedidosId);
@@ -141,50 +147,50 @@ public class Franquia implements Identifiable {
         if (dataInicio == null || dataFim == null) {
             throw new DadosInvalidosException("Datas de início e fim não podem ser nulas.");
         }
-        
+
         if (dataInicio.after(dataFim)) {
             throw new DadosInvalidosException("Data de início não pode ser posterior à data fim.");
         }
-        
+
         List<String> pedidosIdNoPeriodo = new ArrayList<>();
-        
+
         for (String pedidoId : this.pedidosId) {
             Pedido pedido = repositorioPedidos.findById(pedidoId).orElse(null);
             if (pedido != null) {
                 Date dataPedido = pedido.getData();
-                if ((dataPedido.equals(dataInicio) || dataPedido.after(dataInicio)) && 
-                    (dataPedido.equals(dataFim) || dataPedido.before(dataFim))) {
+                if ((dataPedido.equals(dataInicio) || dataPedido.after(dataInicio)) &&
+                        (dataPedido.equals(dataFim) || dataPedido.before(dataFim))) {
                     pedidosIdNoPeriodo.add(pedidoId);
                 }
             }
         }
-        
+
         return pedidosIdNoPeriodo;
     }
 
     public List<String> gerarRelatorioClientesFrequencia(EntityRepository<Cliente> repositorioClientes) {
-	    Map<Cliente, Integer> clientesComPedidos = new HashMap<>();
-	    List<Cliente> todosClientes = repositorioClientes.findAll();
-	    
-	    for (Cliente cliente : todosClientes) {
-	        int totalPedidosNaFranquia = cliente.getTotalPedidosNaFranquia(this.id);
-	        if (totalPedidosNaFranquia > 0) {
-	            clientesComPedidos.put(cliente, totalPedidosNaFranquia);
-	        }
-	    }
-	    
-	    return clientesComPedidos.entrySet().stream()
-	            .sorted(Map.Entry.<Cliente, Integer>comparingByValue().reversed())
-	            .map(entry -> String.format("%s - %d pedidos", 
-	                                      entry.getKey().getNome(), 
-	                                      entry.getValue()))
-	            .collect(Collectors.toList());
-	}
+        Map<Cliente, Integer> clientesComPedidos = new HashMap<>();
+        List<Cliente> todosClientes = repositorioClientes.findAll();
+
+        for (Cliente cliente : todosClientes) {
+            int totalPedidosNaFranquia = cliente.getTotalPedidosNaFranquia(this.id);
+            if (totalPedidosNaFranquia > 0) {
+                clientesComPedidos.put(cliente, totalPedidosNaFranquia);
+            }
+        }
+
+        return clientesComPedidos.entrySet().stream()
+                .sorted(Map.Entry.<Cliente, Integer>comparingByValue().reversed())
+                .map(entry -> String.format("%s - %d pedidos",
+                        entry.getKey().getNome(),
+                        entry.getValue()))
+                .collect(Collectors.toList());
+    }
 
     public List<String> gerarRelatorioProdutosMaisVendidos(EntityRepository<Pedido> repositorioPedidos) {
-        
+
         Map<Produto, Integer> produtosVendidos = new HashMap<>();
-        
+
         for (String pedidoId : pedidosId) {
             Pedido pedido = repositorioPedidos.findById(pedidoId).orElse(null);
             if (pedido != null) {
@@ -193,12 +199,12 @@ public class Franquia implements Identifiable {
                 }
             }
         }
-        
+
         return produtosVendidos.entrySet().stream()
                 .sorted(Map.Entry.<Produto, Integer>comparingByValue().reversed())
-                .map(entry -> String.format("%s - %d unidades", 
-                                          entry.getKey().getNome(), 
-                                          entry.getValue()))
+                .map(entry -> String.format("%s - %d unidades",
+                        entry.getKey().getNome(),
+                        entry.getValue()))
                 .collect(Collectors.toList());
     }
 
@@ -217,9 +223,9 @@ public class Franquia implements Identifiable {
                 .map(vendedor -> String.format("%s - Total Vendas: %.2f", vendedor.getNome(), vendedor.getTotalVendas()))
                 .collect(Collectors.toList());
     }
-    
+
     public int quantidadePedidos() {
-    	return pedidosId.size();
+        return pedidosId.size();
     }
 
     // Getters e Setters
@@ -227,54 +233,55 @@ public class Franquia implements Identifiable {
     public String getId() {
         return id;
     }
-    
+
     private void setId() {
         String newId = "F" + System.currentTimeMillis();
         this.id = newId;
     }
-    
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public String getNome() {
         return nome;
     }
-    
+
     public void setNome(String nome) {
-    	this.nome = nome;
-    }
-    
-    public String getEndereco() { 
-        return endereco; 
-    }
-    
-    public void setEndereco(String endereco) {
-    	this.endereco = endereco;
-    }
-    
-    public void setGerente(Gerente gerente) {
-    	this.gerente = gerente;
+        this.nome = nome;
     }
 
-    public void setGerente(String gerenteId, EntityRepository<Gerente> gerentesValidos) {
-        Gerente gerente = gerentesValidos.findById(gerenteId).orElse(null);
-        if (gerente == null) {
-            throw new EntidadeNaoEncontradaException(gerenteId);
-        }
+    public String getEndereco() {
+        return endereco;
+    }
+
+    public void setEndereco(String endereco) {
+        this.endereco = endereco;
+    }
+
+    public void setGerente(Gerente gerente) {
         this.gerente = gerente;
     }
-    public Gerente getGerente() { 
-        return gerente; 
+
+    public Gerente getGerente() {
+        return gerente;
     }
-    public List<Vendedor> getVendedores() { 
-        return new ArrayList<>(vendedores); 
+    public List<Vendedor> getVendedores() {
+        if (vendedores == null) {
+            vendedores = new ArrayList<>();
+        }
+        return new ArrayList<>(vendedores);
     }
-    public Map<Produto, Integer> getEstoque() { 
+    public Map<Produto, Integer> getEstoque() {
         return estoque;
     }
-    public double getReceita() { 
-        return receita; 
+    public double getReceita() {
+        return receita;
     }
 
     @Override
     public String toString() {
-        return "Franquia: " + nome + " | Gerente: " + gerente.getNome() + " | Receita: R$" + receita;
+        String nomeGerente = (gerente != null) ? gerente.getNome() : "Nenhum";
+        return "Franquia: " + nome + " | Gerente: " + nomeGerente + " | Receita: R$" + receita;
     }
 }

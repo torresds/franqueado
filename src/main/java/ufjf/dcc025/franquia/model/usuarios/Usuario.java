@@ -28,9 +28,9 @@ public abstract class Usuario implements Identifiable {
     }
 
     public void setCpf(String cpf) {
-        if (!validarCPF(cpf)) {
+        /*if (!validarCPF(cpf)) {
             throw new DadosInvalidosException("CPF inválido.");
-        }
+        }*/
         this.cpf = cpf.replaceAll("[^0-9]", "");
     }
 
