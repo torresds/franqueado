@@ -1,0 +1,285 @@
+
+.root {
+    -fx-font-family: 'Inter', 'Segoe UI', 'System-ui', sans-serif;
+
+    -app-bg-color: #F5F7FA;
+    -app-primary: #00796b;
+    -app-primary-light: #48a999;
+    -app-secondary: #2c3e50;
+    -app-accent: #e67e22;
+    -app-text-primary: #2c3e50;
+    -app-text-secondary: #7f8c8d;
+    -app-border-color: #E0E0E0;
+    -app-error-color: #c0392b;
+    -app-delete-color: #e53935;
+    -app-delete-color-light: #ef5350;
+
+    -fx-background: -app-bg-color;
+}
+
+/* --- TELA DE LOGIN --- */
+.login-view {
+    -fx-background-color: linear-gradient(to bottom right, #e0f7fa, #b2ebf2);
+}
+
+.login-form-container {
+    -fx-background-color: white;
+    -fx-padding: 40px;
+    -fx-border-radius: 16px;
+    -fx-background-radius: 16px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 20, 0, 0, 5);
+}
+
+.login-title {
+    -fx-font-size: 42px;
+    -fx-font-weight: 700;
+    -fx-fill: -app-text-primary;
+}
+
+.login-subtitle {
+    -fx-font-size: 20px;
+    -fx-fill: -app-text-secondary;
+}
+
+.login-field {
+    -fx-font-size: 15px;
+    -fx-pref-height: 50px;
+    -fx-border-color: -app-border-color;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-prompt-text-fill: #bdc3c7;
+}
+
+.login-field:focused {
+    -fx-border-color: -app-primary;
+    -fx-effect: dropshadow(gaussian, rgba(0, 121, 107, 0.3), 5, 0, 0, 1);
+}
+
+.login-button {
+    -fx-pref-height: 50px;
+    -fx-background-color: -app-primary;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8px;
+    -fx-cursor: hand;
+    -fx-transition: -fx-background-color 0.3s;
+}
+
+.login-button:hover {
+    -fx-background-color: -app-primary-light;
+}
+
+.error-label {
+    -fx-text-fill: -app-error-color;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+}
+
+/* --- ESTRUTURA PRINCIPAL (MAIN VIEW) --- */
+.main-view {
+    -fx-background-color: -app-bg-color;
+}
+
+.sidebar {
+    -fx-background-color: white;
+    -fx-padding: 20px 0 20px 0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 5, 0);
+}
+
+.sidebar-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-fill: -app-primary;
+    -fx-padding: 0 20px 20px 20px;
+}
+
+.menu-button {
+    -fx-background-color: transparent;
+    -fx-font-size: 15px;
+    -fx-text-fill: -app-text-secondary;
+    -fx-pref-width: 200px;
+    -fx-padding: 12px 20px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-background-radius: 0;
+    -fx-border-width: 0 0 0 4px;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+}
+
+.menu-button .icon-pane {
+    -fx-fill: -app-text-secondary;
+}
+
+.menu-button:hover {
+    -fx-background-color: #ecf0f1;
+    -fx-text-fill: -app-text-primary;
+}
+
+.menu-button:hover .icon-pane {
+    -fx-fill: -app-text-primary;
+}
+
+.menu-button:selected {
+    -fx-background-color: #e0f2f1;
+    -fx-text-fill: -app-primary;
+    -fx-font-weight: bold;
+    -fx-border-color: -app-primary;
+}
+
+.menu-button:selected .icon-pane {
+    -fx-fill: -app-primary;
+}
+
+.icon-pane {
+    -fx-min-width: 24px;
+    -fx-min-height: 24px;
+    -fx-pref-width: 24px;
+    -fx-pref-height: 24px;
+}
+
+.content-area {
+    -fx-padding: 30px;
+}
+
+/* --- COMPONENTES GERAIS --- */
+.page-header {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-fill: -app-text-primary;
+}
+
+.page-subheader {
+    -fx-font-size: 20px;
+    -fx-font-weight: 500;
+    -fx-fill: -app-text-secondary;
+}
+
+.indicator-card {
+    -fx-background-color: white;
+    -fx-padding: 20px;
+    -fx-border-radius: 12px;
+    -fx-background-radius: 12px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 3);
+}
+
+.card-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: 500;
+    -fx-fill: -app-text-secondary;
+}
+
+.card-value {
+    -fx-font-size: 36px;
+    -fx-font-weight: bold;
+    -fx-fill: -app-text-primary;
+}
+
+.card-icon {
+    -fx-fill: -app-primary;
+    -fx-scale-x: 1.5;
+    -fx-scale-y: 1.5;
+}
+
+.alert-box {
+    -fx-background-color: #fff3e0;
+    -fx-border-color: -app-accent;
+    -fx-border-width: 0 0 0 5px;
+    -fx-padding: 15px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.alert-box .label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #e67e22;
+    -fx-font-weight: 500;
+}
+
+.alert-box .icon-pane {
+    -fx-fill: #e67e22;
+}
+
+.table-view {
+    -fx-border-color: -app-border-color;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #f8f9fa;
+}
+
+.table-view .column-header {
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-padding: 10px;
+}
+
+.table-view .table-cell {
+    -fx-padding: 12px;
+    -fx-font-size: 14px;
+}
+
+.table-view .placeholder .label {
+    -fx-font-size: 16px;
+    -fx-text-fill: -app-text-secondary;
+}
+
+/* --- BOTÕES DE AÇÃO --- */
+.action-button {
+    -fx-background-color: -app-primary;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 8px 16px;
+    -fx-font-size: 14px;
+    -fx-background-radius: 8px;
+    -fx-cursor: hand;
+}
+.action-button:hover {
+    -fx-background-color: -app-primary-light;
+}
+
+.delete-button {
+    -fx-background-color: -app-delete-color;
+}
+.delete-button:hover {
+    -fx-background-color: -app-delete-color-light;
+}
+
+.table-action-button {
+    -fx-background-color: transparent;
+    -fx-padding: 4px;
+    -fx-cursor: hand;
+}
+.table-action-button .icon-pane {
+    -fx-fill: -app-text-secondary;
+}
+.table-action-button:hover .icon-pane {
+    -fx-fill: -app-text-primary;
+}
+
+/* --- DIALOGS --- */
+.dialog-pane {
+    -fx-background-color: -app-bg-color;
+}
+.dialog-pane .label {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -app-text-primary;
+}
+.dialog-pane .text-field, .dialog-pane .combo-box {
+    -fx-pref-height: 40px;
+    -fx-font-size: 14px;
+}
+.dialog-pane .button {
+    -fx-background-color: -app-primary;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-pref-width: 100px;
+}
+.dialog-pane .button:cancel {
+    -fx-background-color: #ecf0f1;
+    -fx-text-fill: -app-text-secondary;
+}
