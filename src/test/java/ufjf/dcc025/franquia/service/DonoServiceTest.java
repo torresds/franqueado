@@ -41,7 +41,6 @@ class DonoServiceTest {
 
     @BeforeEach
     void setUp() {
-        // CORREÇÃO: Inicialização manual do serviço para garantir a injeção correta dos mocks.
         donoService = new DonoService(dono, franquiasRepository, gerentesRepository, vendedoresRepository);
 
         // Configuração inicial para os testes
