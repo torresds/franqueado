@@ -1,4 +1,5 @@
-// FILE: src/main/java/ufjf/dcc025/franquia/controller/DonoController.java
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.controller;
 
 import ufjf.dcc025.franquia.model.usuarios.Gerente;
@@ -22,8 +23,8 @@ public class DonoController {
     public void addFranquia(String nome, String endereco, String gerenteId) {
         donoService.cadastrarFranquia(nome, endereco, gerenteId);
     }
-    public void updateFranquia(String id, String nome, String endereco) {
-        donoService.atualizarFranquia(id, nome, endereco);
+    public void updateFranquia(String id, String nome, String endereco, String novoGerenteId) {
+        donoService.atualizarFranquia(id, nome, endereco, novoGerenteId);
     }
     public void deleteFranquia(String id) {
         donoService.removerFranquia(id);
@@ -58,6 +59,10 @@ public class DonoController {
     }
     public List<Vendedor> getVendedoresPorDesempenho() {
         return donoService.rankingVendedores();
+    }
+
+    public List<Vendedor> getVendedoresPorDesempenho(String franquiaId) {
+        return donoService.rankingVendedoresPorFranquia(franquiaId);
     }
 
     public List<Vendedor> getTopVendedores(int limit) {

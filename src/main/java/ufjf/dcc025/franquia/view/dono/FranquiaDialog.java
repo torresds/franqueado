@@ -1,3 +1,5 @@
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.view.dono;
 
 import javafx.geometry.Insets;
@@ -7,17 +9,16 @@ import javafx.util.StringConverter;
 import ufjf.dcc025.franquia.model.franquia.Franquia;
 import ufjf.dcc025.franquia.model.usuarios.Gerente;
 import ufjf.dcc025.franquia.util.AlertFactory;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class FranquiaDialog extends Dialog<Franquia> {
+public class FranquiaDialog extends Dialog<FranquiaDialog.Result> {
 
-    public FranquiaDialog(List<Gerente> todosGerentes) {
-        this(todosGerentes, null);
-    }
+    public record Result(String nome, String endereco, String gerenteId, Franquia original) {}
+    private final Franquia originalFranquia;
 
     public FranquiaDialog(List<Gerente> todosGerentes, Franquia franquia) {
+        this.originalFranquia = franquia;
         setTitle(franquia == null ? "Adicionar Nova Franquia" : "Editar Franquia");
         setHeaderText(franquia == null ? "Preencha os dados da nova franquia." : "Altere os dados da franquia.");
 
@@ -35,11 +36,12 @@ public class FranquiaDialog extends Dialog<Franquia> {
         enderecoField.setPromptText("Endereço Completo");
         ComboBox<Gerente> gerenteComboBox = new ComboBox<>();
 
-        // Configura o ComboBox de Gerentes
+        // Lógica para popular a lista de gerentes disponíveis
         List<Gerente> gerentesDisponiveis = todosGerentes.stream()
                 .filter(g -> g.getFranquia() == null || (franquia != null && franquia.getGerente() != null && g.getId().equals(franquia.getGerente().getId())))
                 .collect(Collectors.toList());
-        gerenteComboBox.getItems().add(null); // Opção para não selecionar gerente
+
+        gerenteComboBox.getItems().add(null); // Opção para "Nenhum"
         gerenteComboBox.getItems().addAll(gerentesDisponiveis);
         gerenteComboBox.setConverter(new StringConverter<>() {
             @Override
@@ -48,20 +50,17 @@ public class FranquiaDialog extends Dialog<Franquia> {
             }
             @Override
             public Gerente fromString(String string) {
-                return null; // Não necessário
+                return null;
             }
         });
 
-        // Preenche os campos se estiver editando
         if (franquia != null) {
             nomeField.setText(franquia.getNome());
             enderecoField.setText(franquia.getEndereco());
             gerenteComboBox.setValue(franquia.getGerente());
-            // Na edição, não permitimos trocar o gerente por esta dialog.
-            gerenteComboBox.setDisable(true);
+            gerenteComboBox.setDisable(false); // Permite a edição do gerente
         } else {
-            gerenteComboBox.setDisable(false);
-            gerenteComboBox.getSelectionModel().select(null); // Seleciona "Nenhum" por padrão
+            gerenteComboBox.getSelectionModel().select(null);
         }
 
         grid.add(new Label("Nome:"), 0, 0);
@@ -73,22 +72,17 @@ public class FranquiaDialog extends Dialog<Franquia> {
 
         getDialogPane().setContent(grid);
 
-        // Converte o resultado do diálogo em um objeto Franquia quando o botão Salvar é clicado.
         setResultConverter(dialogButton -> {
             if (dialogButton == saveButtonType) {
                 if (nomeField.getText().isBlank() || enderecoField.getText().isBlank()) {
                     AlertFactory.showError("Dados Incompletos", "Nome e Endereço são obrigatórios.");
-                    return null; // Retorna nulo para não fechar o diálogo
+                    return null;
                 }
 
                 Gerente selectedManager = gerenteComboBox.getValue();
-                Franquia resultFranquia = new Franquia(nomeField.getText(), enderecoField.getText(), selectedManager);
+                String gerenteId = (selectedManager != null) ? selectedManager.getId() : null;
 
-                if (franquia != null) {
-                    resultFranquia.setId(franquia.getId()); // Mantém o ID original na edição
-                }
-
-                return resultFranquia;
+                return new Result(nomeField.getText(), enderecoField.getText(), gerenteId, originalFranquia);
             }
             return null;
         });

@@ -1,9 +1,8 @@
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.model.clientes;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import ufjf.dcc025.franquia.persistence.Identifiable;
 
@@ -11,7 +10,7 @@ import ufjf.dcc025.franquia.persistence.Identifiable;
  * Classe que representa um cliente do sistema
  */
 public class Cliente implements Identifiable {
-    private String id;
+    private final String id;
     private String nome;
     private String cpf;
     private String email;
@@ -20,7 +19,7 @@ public class Cliente implements Identifiable {
     private Map<String, List<String>> pedidosPorFranquia; // Mapeia ID da franquia para lista de IDs dos pedidos
 
     public Cliente(String nome, String cpf, String email, String telefone, String endereco) {
-        setId();
+        this.id = UUID.randomUUID().toString();
         this.nome = nome;
         this.cpf = cpf;
         this.email = email;
@@ -100,16 +99,6 @@ public class Cliente implements Identifiable {
         return endereco;
     }
 
-    // Setters
-    private void setId() {
-        // O ID agora é baseado no CPF para garantir unicidade
-        String id = "C" + cpf;
-        this.id = id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
 
     public void setNome(String nome) {
         this.nome = nome;

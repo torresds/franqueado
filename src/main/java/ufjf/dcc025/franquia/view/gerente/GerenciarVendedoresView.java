@@ -1,3 +1,5 @@
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.view.gerente;
 
 import javafx.collections.FXCollections;
@@ -16,6 +18,7 @@ import ufjf.dcc025.franquia.util.AlertFactory;
 import ufjf.dcc025.franquia.util.ComponentFactory;
 import ufjf.dcc025.franquia.util.IconManager;
 import ufjf.dcc025.franquia.util.Spacer;
+import ufjf.dcc025.franquia.view.common.PlaceholderView;
 
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -36,6 +39,11 @@ public class GerenciarVendedoresView extends VBox {
 
         Text header = new Text("Gerenciar Vendedores");
         header.getStyleClass().add("page-header");
+
+        if (gerenteService.getFranquia() == null) {
+            getChildren().addAll(header, new PlaceholderView("Nenhuma franquia atribuída.", "Você não pode gerenciar vendedores sem estar alocado a uma franquia."));
+            return;
+        }
 
         Button addButton = new Button("Adicionar Vendedor");
         addButton.getStyleClass().add("action-button");
@@ -111,10 +119,10 @@ public class GerenciarVendedoresView extends VBox {
 
     private void handleAddVendedor() {
         VendedorDialog dialog = new VendedorDialog();
-        Optional<Vendedor> result = dialog.showAndWait();
-        result.ifPresent(vendedor -> {
+        Optional<VendedorDialog.Result> result = dialog.showAndWait();
+        result.ifPresent(data -> {
             try {
-                gerenteController.addVendedor(vendedor.getNome(), vendedor.getCpf(), vendedor.getEmail(), vendedor.getSenha());
+                gerenteController.addVendedor(data.nome(), data.cpf(), data.email(), data.senha());
                 loadVendedores();
                 AlertFactory.showInfo("Sucesso", "Vendedor adicionado com sucesso!");
             } catch (Exception e) {
@@ -125,10 +133,10 @@ public class GerenciarVendedoresView extends VBox {
 
     private void handleEditVendedor(Vendedor vendedor) {
         VendedorDialog dialog = new VendedorDialog(vendedor);
-        Optional<Vendedor> result = dialog.showAndWait();
-        result.ifPresent(editedVendedor -> {
+        Optional<VendedorDialog.Result> result = dialog.showAndWait();
+        result.ifPresent(data -> {
             try {
-                gerenteController.updateVendedor(editedVendedor.getId(), editedVendedor.getNome(), editedVendedor.getCpf(), editedVendedor.getEmail(), editedVendedor.getSenha());
+                gerenteController.updateVendedor(data.original().getId(), data.nome(), data.cpf(), data.email(), data.senha());
                 loadVendedores();
                 AlertFactory.showInfo("Sucesso", "Vendedor atualizado com sucesso!");
             } catch (Exception e) {

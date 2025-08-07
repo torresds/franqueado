@@ -1,54 +1,42 @@
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.model.usuarios;
 
 import ufjf.dcc025.franquia.enums.TipoUsuario;
 import ufjf.dcc025.franquia.model.franquia.Franquia;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class Vendedor extends Usuario {
-    private List<String> pedidosId;
+    private List<String> pedidosId = new ArrayList<>();
     private double totalVendas;
-    private Franquia franquia;
+    private String franquiaId;
+    private transient Franquia franquia;
 
-    public Vendedor(String nome, String cpf, String email, String senha, Franquia franquia) {
+    public Vendedor(String nome, String cpf, String email, String senha) {
         super(nome, cpf, email, senha);
+    }
+
+    // Getters
+    public Franquia getFranquia() { return franquia; }
+    public String getFranquiaId() { return franquiaId; }
+    public List<String> getPedidosId() { return new ArrayList<>(pedidosId); }
+    public double getTotalVendas() { return totalVendas; }
+
+    // Setters e Modificadores
+    public void setFranquia(Franquia franquia) {
         this.franquia = franquia;
-        franquia.adicionarVendedor(this);
-        this.pedidosId = new ArrayList<>();
-        this.totalVendas = 0;
+        this.franquiaId = (franquia != null) ? franquia.getId() : null;
     }
-
-    // Getters e Setters
-    public Franquia getFranquia() {
-        return franquia;
-    }
-
-    public List<String> getPedidosId() {
-        return new ArrayList<>(pedidosId);
-    }
-
-    public double getTotalVendas() {
-        return totalVendas;
-    }
-
-    public void atualizarTotalVendas(double valor) {
-        this.totalVendas += valor;
-    }
-
+    public void atualizarTotalVendas(double valor) { this.totalVendas += valor; }
     public void adicionarPedidoId(String pedidoId) {
-        if (!pedidosId.contains(pedidoId)) {
-            pedidosId.add(pedidoId);
+        if (!this.pedidosId.contains(pedidoId)) {
+            this.pedidosId.add(pedidoId);
         }
     }
 
     @Override
     public TipoUsuario getTipoUsuario() {
         return TipoUsuario.VENDEDOR;
-    }
-
-    @Override
-    public String toString() {
-        return "Vendedor: " + getNome() + " | Vendas: " + totalVendas;
     }
 }

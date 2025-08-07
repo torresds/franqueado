@@ -1,4 +1,5 @@
-// FILE: src/main/java/ufjf/dcc025/franquia/util/DataSeeder.java
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.util;
 
 import ufjf.dcc025.franquia.enums.EstadoPedido;
@@ -155,7 +156,8 @@ public class DataSeeder {
             String cpf = generateRandomCpf();
             String email = "vendedor." + nome.toLowerCase().replace(" ", "") + "@franquia.com";
             Franquia f = franquias.get(random.nextInt(franquias.size()));
-            Vendedor v = new Vendedor(nome, cpf, email, "senha123", f);
+            Vendedor v = new Vendedor(nome, cpf, email, "senha123");
+            v.setFranquia(f);
             vendedoresList.add(v);
             vendedorRepo.upsert(v);
         }
@@ -193,30 +195,28 @@ public class DataSeeder {
     private void createAndProcessOrder(Vendedor v, Gerente g, Cliente c, Map<Produto, Integer> produtos, TiposPagamento pag, TiposEntrega ent, Date data) {
         Pedido novoPedido = new Pedido(c, produtos, v.getFranquia(), pag, ent, v);
         novoPedido.setData(data);
-        String pedidoId = novoPedido.getId();
-        v.adicionarPedidoId(pedidoId);
-        v.getFranquia().adicionarPedido(pedidoId);
-        c.adicionarPedido(pedidoId, v.getFranquia().getId());
 
-        // Simula status variados
+        v.adicionarPedidoId(novoPedido.getId());
+        v.getFranquia().adicionarPedido(novoPedido.getId());
+        c.adicionarPedido(novoPedido.getId(), v.getFranquia().getId());
+
         double chance = random.nextDouble();
-        if (chance < 0.85) { // 85% de chance de ser aprovado
+        if (chance < 0.85) {
             novoPedido.aprovarPedido();
             for (Map.Entry<Produto, Integer> entry : novoPedido.getProdutosQuantidade().entrySet()) {
                 g.getFranquia().atualizarEstoque(entry.getKey(), -entry.getValue());
             }
             v.atualizarTotalVendas(novoPedido.getValorTotal());
             v.getFranquia().atualizarReceita(novoPedido.getValorTotal());
-        } else if (chance < 0.95) { // 10% de chance de ser cancelado
+        } else if (chance < 0.95) {
             novoPedido.cancelarPedido();
-        } // 5% restante fica como pendente
+        }
 
         pedidoRepo.upsert(novoPedido);
         franquiaRepo.upsert(g.getFranquia());
         vendedorRepo.upsert(v);
         clienteRepo.upsert(c);
     }
-
     private void saveAll() {
         try {
             gerenteRepo.saveAllSync(5, TimeUnit.SECONDS);

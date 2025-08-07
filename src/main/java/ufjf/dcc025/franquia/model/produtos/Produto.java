@@ -1,3 +1,5 @@
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.model.produtos;
 
 import ufjf.dcc025.franquia.exception.*;

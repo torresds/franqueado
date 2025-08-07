@@ -1,3 +1,5 @@
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.view.gerente;
 
 import javafx.geometry.Insets;
@@ -6,16 +8,20 @@ import javafx.scene.layout.GridPane;
 import ufjf.dcc025.franquia.model.usuarios.Vendedor;
 import ufjf.dcc025.franquia.util.AlertFactory;
 
-public class VendedorDialog extends Dialog<Vendedor> {
+public class VendedorDialog extends Dialog<VendedorDialog.Result> {
+
+    public record Result(String nome, String cpf, String email, String senha, Vendedor original) {}
 
     private final PasswordField senhaField;
     private final PasswordField confirmarSenhaField;
+    private final Vendedor originalVendedor;
 
     public VendedorDialog() {
         this(null);
     }
 
     public VendedorDialog(Vendedor vendedor) {
+        this.originalVendedor = vendedor;
         setTitle(vendedor == null ? "Adicionar Novo Vendedor" : "Editar Vendedor");
         setHeaderText(vendedor == null ? "Preencha os dados do novo vendedor." : "Altere os dados do vendedor.");
 
@@ -70,8 +76,7 @@ public class VendedorDialog extends Dialog<Vendedor> {
                     senha = vendedor.getSenha();
                 }
 
-                Vendedor resultVendedor = new Vendedor(nomeField.getText(), cpfField.getText(), emailField.getText(), senha, null);
-                return resultVendedor;
+                return new Result(nomeField.getText(), cpfField.getText(), emailField.getText(), senha, originalVendedor);
             }
             return null;
         });

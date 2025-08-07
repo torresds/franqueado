@@ -1,4 +1,5 @@
-// FILE: src/main/java/ufjf/dcc025/franquia/service/VendedorService.java
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.service;
 
 import ufjf.dcc025.franquia.enums.TiposEntrega;
@@ -11,7 +12,6 @@ import ufjf.dcc025.franquia.persistence.EntityRepository;
 import ufjf.dcc025.franquia.exception.*;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +33,6 @@ public class VendedorService {
                 metodoEntrega, vendedor);
 
         vendedor.adicionarPedidoId(novoPedido.getId());
-        vendedor.getFranquia().getGerente().adicionarPedidoPendente(novoPedido.getId());
         vendedor.getFranquia().adicionarPedido(novoPedido.getId());
         cliente.adicionarPedido(novoPedido.getId(), vendedor.getFranquia().getId());
 
@@ -44,43 +43,45 @@ public class VendedorService {
         return novoPedido;
     }
 
-    public Pedido alterarPedido(String pedidoId, Map<Produto, Integer> produtosQuantidade) {
-        Pedido pedidoOriginal = pedidoRepository.findById(pedidoId)
+    /**
+     * Solicita a alteração de um pedido existente.
+     * Muda o status do pedido para ALTERACAO_SOLICITADA.
+     */
+    public Pedido solicitarAlteracaoPedido(String pedidoId, Map<Produto, Integer> novosProdutos, TiposEntrega novaEntrega) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException(pedidoId));
 
-        Pedido copia = new Pedido(pedidoOriginal);
-        copia.setProdutosQuantidade(new HashMap<>(produtosQuantidade));
-        copia.atualizarValores();
-        vendedor.getFranquia().getGerente().adicionarAlteracaoPedido(copia);
-        pedidoRepository.upsert(copia);
+        if (!pedido.getVendedor().getId().equals(vendedor.getId())) {
+            throw new PermissaoNegadaException("alterar um pedido de outro vendedor.");
+        }
+
+        pedido.solicitarAlteracao(novosProdutos, novaEntrega);
+        pedidoRepository.upsert(pedido);
         pedidoRepository.saveAllAsync();
-        return copia;
+        return pedido;
     }
 
-    public Pedido alterarMetodoEntrega(String pedidoId, TiposEntrega metodoEntrega) {
-        Pedido pedidoOriginal = pedidoRepository.findById(pedidoId)
+    /**
+     * Solicita o cancelamento de um pedido.
+     * Muda o status do pedido para CANCELAMENTO_SOLICITADO.
+     */
+    public void solicitarCancelamentoPedido(String pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException(pedidoId));
 
-        Pedido copia = new Pedido(pedidoOriginal);
-        copia.setMetodoEntrega(metodoEntrega);
+        if (!pedido.getVendedor().getId().equals(vendedor.getId())) {
+            throw new PermissaoNegadaException("cancelar um pedido de outro vendedor.");
+        }
 
-        vendedor.getFranquia().getGerente().adicionarAlteracaoPedido(copia);
-        pedidoRepository.upsert(copia);
+        pedido.solicitarCancelamento();
+        pedidoRepository.upsert(pedido);
         pedidoRepository.saveAllAsync();
-        return copia;
-    }
-
-    public void cancelarPedido(String pedidoId) {
-        vendedor.getFranquia().getGerente().adicionarSolicitacaoCancelamento(pedidoId);
     }
 
     public List<Pedido> listaPedidos() {
         List<Pedido> listaPedidos = new ArrayList<>();
         for (String id : vendedor.getPedidosId()) {
-            Pedido pedido = pedidoRepository.findById(id).orElse(null);
-            if (pedido != null) {
-                listaPedidos.add(pedido);
-            }
+            pedidoRepository.findById(id).ifPresent(listaPedidos::add);
         }
         return listaPedidos;
     }

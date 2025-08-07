@@ -1,11 +1,11 @@
-// FILE: src/main/java/ufjf/dcc025/franquia/model/pedidos/Pedido.java
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.model.pedidos;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-
+import java.util.UUID;
 import ufjf.dcc025.franquia.enums.TiposPagamento;
 import ufjf.dcc025.franquia.enums.TiposEntrega;
 import ufjf.dcc025.franquia.enums.EstadoPedido;
@@ -17,12 +17,11 @@ import ufjf.dcc025.franquia.model.franquia.Franquia;
 
 public class Pedido implements Identifiable {
 
-    private static final AtomicLong idCounter = new AtomicLong(System.currentTimeMillis());
-    private final String id; // CORRIGIDO: ID agora é final
+    private final String id;
     private Date data;
-    private final Cliente cliente;
-    private final Vendedor vendedor;
-    private final Franquia franquia;
+    private final String clienteId;
+    private final String vendedorId;
+    private final String franquiaId;
     private Map<Produto, Integer> produtosQuantidade;
     private final TiposPagamento formaPagamento;
     private TiposEntrega metodoEntrega;
@@ -30,52 +29,45 @@ public class Pedido implements Identifiable {
     private double valorFrete;
     private EstadoPedido status;
 
+    // Campos para armazenar alterações propostas
+    private Map<Produto, Integer> produtosAlteracao;
+    private TiposEntrega entregaAlteracao;
+    private EstadoPedido estadoAnterior; // NOVO: Armazena o estado antes da solicitação
+
+    private transient Cliente cliente;
+    private transient Vendedor vendedor;
+    private transient Franquia franquia;
+
     public Pedido(Cliente cliente, Map<Produto, Integer> produtos, Franquia franquia, TiposPagamento formaPagamento, TiposEntrega metodoEntrega, Vendedor vendedor) {
-        this.id = "P" + idCounter.getAndIncrement();
+        this.id = UUID.randomUUID().toString();
         this.data = new Date();
         this.cliente = cliente;
+        this.clienteId = cliente.getId();
         this.vendedor = vendedor;
+        this.vendedorId = vendedor.getId();
         this.franquia = franquia;
+        this.franquiaId = franquia.getId();
         this.produtosQuantidade = new HashMap<>(produtos);
         this.formaPagamento = formaPagamento;
         this.metodoEntrega = metodoEntrega;
-        this.valorFrete = calcularFrete();
-        this.valorTotal = calcularValorTotal();
         this.status = EstadoPedido.PENDENTE;
-    }
-
-    /**
-     * Construtor de Cópia: Cria uma cópia de um pedido existente.
-     * @param original O pedido a ser copiado.
-     */
-    public Pedido(Pedido original) {
-        this.id = original.id; // Copia o ID final
-        this.data = new Date(); // Nova data para a solicitação de alteração
-        this.cliente = original.cliente;
-        this.vendedor = original.vendedor;
-        this.franquia = original.franquia;
-        this.produtosQuantidade = new HashMap<>(original.produtosQuantidade);
-        this.formaPagamento = original.formaPagamento;
-        this.metodoEntrega = original.metodoEntrega;
-        this.valorFrete = original.valorFrete;
-        this.valorTotal = original.valorTotal;
-        this.status = original.status;
+        this.produtosAlteracao = null;
+        this.entregaAlteracao = null;
+        this.estadoAnterior = null;
+        atualizarValores();
     }
 
     private double calcularValorTotal() {
-        this.valorTotal = produtosQuantidade.entrySet().stream()
+        return produtosQuantidade.entrySet().stream()
                 .mapToDouble(entry -> entry.getKey().getPreco() * entry.getValue())
                 .sum();
-        return valorTotal + valorFrete;
     }
 
     private double calcularFrete() {
         if (metodoEntrega == TiposEntrega.RETIRADA) {
             return 0.0;
         }
-        double valorProdutos = produtosQuantidade.entrySet().stream()
-                .mapToDouble(entry -> entry.getKey().getPreco() * entry.getValue())
-                .sum();
+        double valorProdutos = calcularValorTotal();
 
         if (valorProdutos >= 100.0) {
             return 0.0;
@@ -83,51 +75,91 @@ public class Pedido implements Identifiable {
         return 8.0;
     }
 
-    public void adicionarProduto(Produto produto, int quantidade) {
-        produtosQuantidade.merge(produto, quantidade, Integer::sum);
-        atualizarValores();
-    }
-
-    public void removerProduto(Produto produto) {
-        produtosQuantidade.remove(produto);
-        atualizarValores();
-    }
-
     public void atualizarValores() {
         this.valorFrete = calcularFrete();
-        this.valorTotal = calcularValorTotal();
+        this.valorTotal = calcularValorTotal() + this.valorFrete;
+    }
+
+    // MÉTODOS PARA GERENCIAR ESTADOS E ALTERAÇÕES
+
+    public void solicitarAlteracao(Map<Produto, Integer> novosProdutos, TiposEntrega novaEntrega) {
+        if (this.status == EstadoPedido.APROVADO || this.status == EstadoPedido.PENDENTE) {
+            this.estadoAnterior = this.status; // Armazena o estado atual
+            this.produtosAlteracao = new HashMap<>(novosProdutos);
+            this.entregaAlteracao = novaEntrega;
+            this.status = EstadoPedido.ALTERACAO_SOLICITADA;
+        }
+    }
+
+    public void solicitarCancelamento() {
+        if (this.status == EstadoPedido.APROVADO || this.status == EstadoPedido.PENDENTE) {
+            this.estadoAnterior = this.status; // Armazena o estado atual
+            this.status = EstadoPedido.CANCELAMENTO_SOLICITADO;
+        }
+    }
+
+    public void aplicarAlteracaoAprovada() {
+        if (this.status == EstadoPedido.ALTERACAO_SOLICITADA) {
+            this.produtosQuantidade = this.produtosAlteracao;
+            this.metodoEntrega = this.entregaAlteracao;
+            this.produtosAlteracao = null;
+            this.entregaAlteracao = null;
+            this.estadoAnterior = null;
+            this.status = EstadoPedido.APROVADO;
+            atualizarValores();
+        }
+    }
+
+    public void negarSolicitacao() {
+        if (this.status == EstadoPedido.ALTERACAO_SOLICITADA || this.status == EstadoPedido.CANCELAMENTO_SOLICITADO) {
+            this.produtosAlteracao = null;
+            this.entregaAlteracao = null;
+            if (this.estadoAnterior != null) {
+                this.status = this.estadoAnterior; // Restaura o estado anterior
+                this.estadoAnterior = null;
+            }
+        }
     }
 
     // Getters
     @Override
     public String getId() { return id; }
-
     public Date getData() { return data; }
-    public void setData(Date data) { this.data = data; }
     public Cliente getCliente() { return cliente; }
     public Vendedor getVendedor() { return vendedor; }
     public EstadoPedido getStatus() { return status; }
     public Franquia getFranquia() { return franquia; }
+    public String getClienteId() { return clienteId; }
+    public String getVendedorId() { return vendedorId; }
+    public String getFranquiaId() { return franquiaId; }
     public Map<Produto, Integer> getProdutosQuantidade() { return new HashMap<>(produtosQuantidade); }
-    public void setProdutosQuantidade(Map<Produto, Integer> produtos) { this.produtosQuantidade = produtos; }
     public TiposPagamento getFormaPagamento() { return formaPagamento; }
     public TiposEntrega getMetodoEntrega() { return metodoEntrega; }
     public double getValorFrete() { return valorFrete; }
     public double getValorTotal() { return valorTotal; }
-
-    // Setters e controle de status
-    public void setMetodoEntrega (TiposEntrega metodoEntrega){
-        this.metodoEntrega = metodoEntrega;
-        this.atualizarValores();
+    public Map<Produto, Integer> getProdutosAlteracao() {
+        return produtosAlteracao != null ? new HashMap<>(produtosAlteracao) : null;
     }
+    public TiposEntrega getEntregaAlteracao() {
+        return entregaAlteracao;
+    }
+    public EstadoPedido getEstadoAnterior() {
+        return estadoAnterior;
+    }
+
+    // Setters
+    public void setData(Date data) { this.data = data; }
+    public void setCliente(Cliente cliente) { this.cliente = cliente; }
+    public void setVendedor(Vendedor vendedor) { this.vendedor = vendedor; }
+    public void setFranquia(Franquia franquia) { this.franquia = franquia; }
+
     public void aprovarPedido() { this.status = EstadoPedido.APROVADO; }
     public void cancelarPedido() { this.status = EstadoPedido.CANCELADO; }
+
+    // Métodos de verificação de estado
     public boolean isPendente() { return status == EstadoPedido.PENDENTE; }
     public boolean isAprovado() { return status == EstadoPedido.APROVADO; }
     public boolean isCancelado() { return status == EstadoPedido.CANCELADO; }
-
-    @Override
-    public String toString() {
-        return "Pedido #" + id + " | Cliente: " + cliente.getNome() + " | Valor: R$" + valorTotal;
-    }
+    public boolean isAlteracaoSolicitada() { return status == EstadoPedido.ALTERACAO_SOLICITADA; }
+    public boolean isCancelamentoSolicitado() { return status == EstadoPedido.CANCELAMENTO_SOLICITADO; }
 }

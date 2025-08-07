@@ -1,3 +1,5 @@
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.service;
 
 import ufjf.dcc025.franquia.model.franquia.Franquia;
@@ -9,6 +11,7 @@ import ufjf.dcc025.franquia.exception.*;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class DonoService {
@@ -73,16 +76,59 @@ public class DonoService {
         return franquiasRepository.findAll();
     }
 
-    public void atualizarFranquia(String id, String nome, String endereco) {
-        if (nome == null || nome.trim().isEmpty() || endereco == null || endereco.trim().isEmpty()) {
-            throw new DadosInvalidosException("Nome e endereço não podem ser vazios.");
-        }
+    /**
+     * Atualiza os dados de uma franquia, incluindo seu gerente.
+     * @param id O ID da franquia a ser atualizada.
+     * @param nome O novo nome da franquia.
+     * @param endereco O novo endereço da franquia.
+     * @param novoGerenteId O ID do novo gerente (pode ser nulo para desatribuir).
+     */
+    public void atualizarFranquia(String id, String nome, String endereco, String novoGerenteId) {
         Franquia franquia = franquiasRepository.findById(id)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException(id));
+
         franquia.setNome(nome);
         franquia.setEndereco(endereco);
+
+        Gerente gerenteAtual = franquia.getGerente();
+        String gerenteAtualId = (gerenteAtual != null) ? gerenteAtual.getId() : null;
+
+        // Se o gerente não mudou, apenas salva nome/endereço e retorna.
+        if (Objects.equals(gerenteAtualId, novoGerenteId)) {
+            franquiasRepository.upsert(franquia);
+            franquiasRepository.saveAllAsync();
+            return;
+        }
+
+        // Se o gerente atual precisa ser desvinculado
+        if (gerenteAtual != null) {
+            gerenteAtual.setFranquia(null);
+            gerentesRepository.upsert(gerenteAtual);
+        }
+
+        // Se um novo gerente foi atribuído
+        if (novoGerenteId != null && !novoGerenteId.isBlank()) {
+            Gerente novoGerente = gerentesRepository.findById(novoGerenteId)
+                    .orElseThrow(() -> new EntidadeNaoEncontradaException(novoGerenteId));
+
+            // Verifica se o novo gerente já não está em outra franquia
+            if (novoGerente.getFranquia() != null) {
+                throw new DadosInvalidosException("O gerente selecionado já está alocado na franquia: " + novoGerente.getFranquia().getNome());
+            }
+
+            franquia.setGerente(novoGerente);
+            novoGerente.setFranquia(franquia);
+            gerentesRepository.upsert(novoGerente);
+        } else {
+            // Se o novo gerente é nulo (desatribuição)
+            franquia.setGerente(null);
+        }
+
         franquiasRepository.upsert(franquia);
+
+        // Salva ambos os repositórios para garantir a consistência
         franquiasRepository.saveAllAsync();
+        gerentesRepository.saveAllAsync();
     }
 
     // Gerenciamento de Gerentes
@@ -200,6 +246,13 @@ public class DonoService {
 
     public List<Vendedor> rankingVendedores() {
         return vendedoresRepository.findAll().stream()
+                .sorted(Comparator.comparingDouble(Vendedor::getTotalVendas).reversed())
+                .collect(Collectors.toList());
+    }
+
+    public List<Vendedor> rankingVendedoresPorFranquia(String franquiaId) {
+        return vendedoresRepository.findAll().stream()
+                .filter(v -> v.getFranquia() != null && v.getFranquia().getId().equals(franquiaId))
                 .sorted(Comparator.comparingDouble(Vendedor::getTotalVendas).reversed())
                 .collect(Collectors.toList());
     }

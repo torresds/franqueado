@@ -1,5 +1,8 @@
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.service;
 
+import ufjf.dcc025.franquia.enums.EstadoPedido;
 import ufjf.dcc025.franquia.model.clientes.Cliente;
 import ufjf.dcc025.franquia.model.franquia.Franquia;
 import ufjf.dcc025.franquia.model.pedidos.Pedido;
@@ -30,16 +33,23 @@ public class GerenteService {
         this.clienteRepository = clienteRepository;
     }
 
-    // Gerenciamento de Vendedores
     public Vendedor cadastrarVendedor(String nome, String cpf, String email, String senha) {
-        Vendedor novoVendedor = new Vendedor(nome, cpf, email, senha, gerente.getFranquia());
+        if (gerente.getFranquia() == null) {
+            throw new DadosInvalidosException("Gerente não está associado a nenhuma franquia.");
+        }
+
+        Vendedor novoVendedor = new Vendedor(nome, cpf, email, senha);
+        novoVendedor.setFranquia(gerente.getFranquia());
+        gerente.getFranquia().adicionarVendedor(novoVendedor);
+
         vendedorRepository.upsert(novoVendedor);
-        vendedorRepository.saveAllAsync();
         franquiaRepository.upsert(gerente.getFranquia());
+
+        vendedorRepository.saveAllAsync();
         franquiaRepository.saveAllAsync();
+
         return novoVendedor;
     }
-
     public void removerVendedor(String vendedorId) {
         Vendedor vendedor = vendedorRepository.findById(vendedorId)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException(vendedorId));
@@ -87,6 +97,7 @@ public class GerenteService {
         franquiaRepository.saveAllAsync();
     }
 
+
     public void editarProduto(String codigo, String novoNome, String novaDescricao, double novoPreco) {
         Produto produtoAtualizado = new Produto(codigo, novoNome, novaDescricao, novoPreco);
         for (Franquia franquia : franquiaRepository.findAll()) {
@@ -100,6 +111,31 @@ public class GerenteService {
         }
         franquiaRepository.saveAllAsync();
     }
+
+    /**
+     * NOVO: Remove um produto do catálogo da franquia.
+     * @param codigoProduto O código do produto a ser removido.
+     */
+    public void removerProduto(String codigoProduto) {
+        Franquia franquiaGerente = gerente.getFranquia();
+        if (franquiaGerente == null) {
+            throw new DadosInvalidosException("Gerente não está associado a nenhuma franquia.");
+        }
+        Produto produto = franquiaGerente.buscarProduto(codigoProduto);
+        if (produto == null) {
+            throw new EntidadeNaoEncontradaException(codigoProduto);
+        }
+
+        // Regra de negócio: não permitir remover produto se ainda houver em estoque.
+        if (franquiaGerente.getEstoque().get(produto) > 0) {
+            throw new DadosInvalidosException("Não é possível remover o produto pois ainda existem unidades em estoque.");
+        }
+
+        franquiaGerente.removerProduto(produto);
+        franquiaRepository.upsert(franquiaGerente);
+        franquiaRepository.saveAllAsync();
+    }
+
 
     public void atualizarEstoqueProduto(String codigoProduto, int novaQuantidade) {
         Franquia franquiaGerente = gerente.getFranquia();
@@ -116,6 +152,16 @@ public class GerenteService {
         franquiaRepository.saveAllAsync();
     }
 
+    public List<Map.Entry<Produto, Integer>> listarProdutosComEstoqueBaixo(int limite) {
+        if (gerente.getFranquia() == null) {
+            return new ArrayList<>();
+        }
+        return gerente.getFranquia().getEstoque().entrySet().stream()
+                .filter(entry -> entry.getValue() < limite)
+                .sorted(Map.Entry.comparingByValue())
+                .collect(Collectors.toList());
+    }
+
     public List<Pedido> listarPedidosDaFranquia() {
         if (gerente.getFranquia() == null) {
             return new ArrayList<>();
@@ -123,7 +169,7 @@ public class GerenteService {
         String franquiaId = gerente.getFranquia().getId();
         return pedidoRepository.findAll().stream()
                 .filter(p -> p.getFranquia().getId().equals(franquiaId))
-                .sorted(Comparator.comparing(Pedido::getData).reversed()) // Ordena por mais recente
+                .sorted(Comparator.comparing(Pedido::getData).reversed())
                 .collect(Collectors.toList());
     }
 
@@ -140,14 +186,7 @@ public class GerenteService {
             pedido.getVendedor().atualizarTotalVendas(pedido.getValorTotal());
             pedido.getFranquia().atualizarReceita(pedido.getValorTotal());
 
-            pedidoRepository.upsert(pedido);
-            franquiaRepository.upsert(gerente.getFranquia());
-            vendedorRepository.upsert(pedido.getVendedor());
-
-            // Salva tudo de forma assíncrona
-            pedidoRepository.saveAllAsync();
-            franquiaRepository.saveAllAsync();
-            vendedorRepository.saveAllAsync();
+            persistAll(pedido);
         }
         return pedido;
     }
@@ -157,18 +196,86 @@ public class GerenteService {
                 .orElseThrow(() -> new EntidadeNaoEncontradaException(pedidoId));
 
         if (pedido.isAprovado()) {
-            // Devolve os produtos ao estoque
             Map<Produto, Integer> produtos = pedido.getProdutosQuantidade();
             for (Map.Entry<Produto, Integer> entry : produtos.entrySet()) {
                 gerente.getFranquia().atualizarEstoque(entry.getKey(), entry.getValue());
             }
-            // Estorna os valores
             pedido.getVendedor().atualizarTotalVendas(-pedido.getValorTotal());
             pedido.getFranquia().atualizarReceita(-pedido.getValorTotal());
         }
 
         pedido.cancelarPedido();
+        persistAll(pedido);
+        return pedido;
+    }
 
+    public void aprovarAlteracao(String pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(pedidoId));
+
+        if (!pedido.isAlteracaoSolicitada()) {
+            throw new DadosInvalidosException("O pedido não está aguardando aprovação de alteração.");
+        }
+
+        Map<Produto, Integer> produtosOriginais = pedido.getProdutosQuantidade();
+        double valorTotalOriginal = pedido.getValorTotal();
+        EstadoPedido estadoOriginal = pedido.getEstadoAnterior();
+
+        if (estadoOriginal == EstadoPedido.APROVADO) {
+            for (Map.Entry<Produto, Integer> entry : produtosOriginais.entrySet()) {
+                gerente.getFranquia().atualizarEstoque(entry.getKey(), entry.getValue());
+            }
+            pedido.getVendedor().atualizarTotalVendas(-valorTotalOriginal);
+            pedido.getFranquia().atualizarReceita(-valorTotalOriginal);
+        }
+
+        pedido.aplicarAlteracaoAprovada();
+
+        Map<Produto, Integer> produtosNovos = pedido.getProdutosQuantidade();
+        for (Map.Entry<Produto, Integer> entry : produtosNovos.entrySet()) {
+            gerente.getFranquia().atualizarEstoque(entry.getKey(), -entry.getValue());
+        }
+        pedido.getVendedor().atualizarTotalVendas(pedido.getValorTotal());
+        pedido.getFranquia().atualizarReceita(pedido.getValorTotal());
+
+        persistAll(pedido);
+    }
+
+    public void aprovarCancelamento(String pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(pedidoId));
+
+        if (!pedido.isCancelamentoSolicitado()) {
+            throw new DadosInvalidosException("O pedido não está aguardando aprovação de cancelamento.");
+        }
+
+        if (pedido.getEstadoAnterior() == EstadoPedido.APROVADO) {
+            for (Map.Entry<Produto, Integer> entry : pedido.getProdutosQuantidade().entrySet()) {
+                gerente.getFranquia().atualizarEstoque(entry.getKey(), entry.getValue());
+            }
+            pedido.getVendedor().atualizarTotalVendas(-pedido.getValorTotal());
+            pedido.getFranquia().atualizarReceita(-pedido.getValorTotal());
+        }
+
+        pedido.cancelarPedido();
+        persistAll(pedido);
+    }
+
+    public void negarSolicitacao(String pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(pedidoId));
+
+        if (!pedido.isAlteracaoSolicitada() && !pedido.isCancelamentoSolicitado()) {
+            throw new DadosInvalidosException("O pedido não possui solicitações pendentes.");
+        }
+
+        pedido.negarSolicitacao();
+
+        pedidoRepository.upsert(pedido);
+        pedidoRepository.saveAllAsync();
+    }
+
+    private void persistAll(Pedido pedido) {
         pedidoRepository.upsert(pedido);
         franquiaRepository.upsert(gerente.getFranquia());
         vendedorRepository.upsert(pedido.getVendedor());
@@ -176,8 +283,6 @@ public class GerenteService {
         pedidoRepository.saveAllAsync();
         franquiaRepository.saveAllAsync();
         vendedorRepository.saveAllAsync();
-
-        return pedido;
     }
 
     public List<Vendedor> rankingVendedoresDaFranquia() {

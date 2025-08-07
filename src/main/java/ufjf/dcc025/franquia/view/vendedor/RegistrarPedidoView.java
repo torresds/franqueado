@@ -1,4 +1,5 @@
-// FILE: src/main/java/ufjf/dcc025/franquia/view/RegistrarPedidoView.java
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.view.vendedor;
 
 import javafx.collections.FXCollections;

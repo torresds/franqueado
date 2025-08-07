@@ -1,3 +1,5 @@
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.view.gerente;
 
 import javafx.collections.FXCollections;
@@ -9,6 +11,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import ufjf.dcc025.franquia.controller.GerenteController;
 import ufjf.dcc025.franquia.model.produtos.Produto;
 import ufjf.dcc025.franquia.service.GerenteService;
@@ -41,7 +44,9 @@ public class GerenciarEstoqueView extends VBox {
         header.getStyleClass().add("page-header");
 
         if (gerenteService.getFranquia() == null) {
-            getChildren().addAll(header, new PlaceholderView("Nenhuma franquia atribuída.", "Você não pode gerenciar o estoque sem estar alocado a uma franquia."));
+            getChildren().addAll(header,
+                    new PlaceholderView("Nenhuma franquia atribuída.",
+                            "Você não pode gerenciar o estoque sem estar alocado a uma franquia."));
             return;
         }
 
@@ -52,22 +57,28 @@ public class GerenciarEstoqueView extends VBox {
         headerBox.setAlignment(Pos.CENTER_LEFT);
 
         setupTable();
-
         getChildren().addAll(headerBox, table);
         loadEstoque();
     }
 
     private void setupTable() {
         TableColumn<Map.Entry<Produto, Integer>, String> nameCol = new TableColumn<>("Produto");
-        nameCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().getKey().getNome()));
+        nameCol.setCellValueFactory(cellData ->
+                new ReadOnlyObjectWrapper<>(cellData.getValue().getKey().getNome())
+        );
 
         TableColumn<Map.Entry<Produto, Integer>, String> descCol = new TableColumn<>("Descrição");
-        descCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().getKey().getDescricao()));
+        descCol.setCellValueFactory(cellData ->
+                new ReadOnlyObjectWrapper<>(cellData.getValue().getKey().getDescricao())
+        );
 
         TableColumn<Map.Entry<Produto, Integer>, Double> priceCol = new TableColumn<>("Preço Unitário");
-        priceCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleDoubleProperty(cellData.getValue().getKey().getPreco()).asObject());
+        priceCol.setCellValueFactory(cellData ->
+                new ReadOnlyObjectWrapper<>(cellData.getValue().getKey().getPreco())
+        );
         priceCol.setCellFactory(column -> new TableCell<>() {
-            private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale.Builder().setLanguage("pt").setRegion("BR").build());
+            private final NumberFormat currencyFormat =
+                    NumberFormat.getCurrencyInstance(new Locale.Builder().setLanguage("pt").setRegion("BR").build());
             @Override
             protected void updateItem(Double item, boolean empty) {
                 super.updateItem(item, empty);
@@ -76,40 +87,59 @@ public class GerenciarEstoqueView extends VBox {
         });
 
         TableColumn<Map.Entry<Produto, Integer>, Integer> qtyCol = new TableColumn<>("Quantidade");
-        qtyCol.setCellValueFactory(new PropertyValueFactory<>("value"));
+        qtyCol.setCellValueFactory(cellData ->
+                new ReadOnlyObjectWrapper<>(cellData.getValue().getValue())
+        );
 
         TableColumn<Map.Entry<Produto, Integer>, Void> actionCol = new TableColumn<>("Ações");
         actionCol.setCellFactory(param -> new TableCell<>() {
             private final Button editButton = new Button();
             private final Button stockButton = new Button();
-            private final HBox pane = new HBox(5, editButton, stockButton);
-
+            private final Button deleteButton = new Button(); // NOVO
+            private final HBox pane = new HBox(5, editButton, stockButton, deleteButton); // NOVO
             {
                 pane.setAlignment(Pos.CENTER);
                 editButton.setGraphic(ComponentFactory.createIcon(IconManager.EDIT));
                 editButton.getStyleClass().add("table-action-button");
+                Tooltip.install(editButton, new Tooltip("Editar Informações do Produto"));
+
                 stockButton.setGraphic(ComponentFactory.createIcon(IconManager.BOX));
                 stockButton.getStyleClass().add("table-action-button");
                 Tooltip.install(stockButton, new Tooltip("Atualizar Quantidade"));
+
+                deleteButton.setGraphic(ComponentFactory.createIcon(IconManager.DELETE)); // NOVO
+                deleteButton.getStyleClass().add("table-action-button"); // NOVO
+                Tooltip.install(deleteButton, new Tooltip("Remover Produto")); // NOVO
 
                 editButton.setOnAction(event -> {
                     Produto produto = getTableView().getItems().get(getIndex()).getKey();
                     handleEditProduto(produto);
                 });
                 stockButton.setOnAction(event -> {
-                    Map.Entry<Produto, Integer> entry = getTableView().getItems().get(getIndex());
+                    Map.Entry<Produto, Integer> entry =
+                            getTableView().getItems().get(getIndex());
                     handleUpdateEstoque(entry.getKey(), entry.getValue());
                 });
+                deleteButton.setOnAction(event -> { // NOVO
+                    Produto produto = getTableView().getItems().get(getIndex()).getKey();
+                    handleDeleteProduto(produto);
+                });
             }
-
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                setGraphic(empty ? null : pane);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    // Lógica para mostrar o botão de apagar apenas se o estoque for 0
+                    Map.Entry<Produto, Integer> entry = getTableView().getItems().get(getIndex());
+                    deleteButton.setVisible(entry.getValue() == 0);
+                    setGraphic(pane);
+                }
             }
         });
 
-        table.getColumns().addAll(nameCol, descCol, priceCol, qtyCol, actionCol);
+        table.getColumns().setAll(nameCol, descCol, priceCol, qtyCol, actionCol);
         table.setItems(estoqueList);
         ComponentFactory.configureTable(table);
     }
@@ -122,7 +152,9 @@ public class GerenciarEstoqueView extends VBox {
         ProdutoDialog dialog = new ProdutoDialog();
         dialog.showAndWait().ifPresent(result -> {
             try {
-                gerenteController.addProduto(result.codigo(), result.nome(), result.descricao(), result.preco(), result.quantidadeInicial());
+                gerenteController.addProduto(
+                        result.codigo(), result.nome(), result.descricao(), result.preco(), result.quantidadeInicial()
+                );
                 loadEstoque();
                 AlertFactory.showInfo("Sucesso", "Produto adicionado com sucesso!");
             } catch (Exception e) {
@@ -135,7 +167,9 @@ public class GerenciarEstoqueView extends VBox {
         ProdutoDialog dialog = new ProdutoDialog(produto);
         dialog.showAndWait().ifPresent(result -> {
             try {
-                gerenteController.updateProduto(result.codigo(), result.nome(), result.descricao(), result.preco());
+                gerenteController.updateProduto(
+                        result.codigo(), result.nome(), result.descricao(), result.preco()
+                );
                 loadEstoque();
                 AlertFactory.showInfo("Sucesso", "Produto atualizado com sucesso!");
             } catch (Exception e) {
@@ -145,7 +179,8 @@ public class GerenciarEstoqueView extends VBox {
     }
 
     private void handleUpdateEstoque(Produto produto, int quantidadeAtual) {
-        AtualizarEstoqueDialog dialog = new AtualizarEstoqueDialog(produto.getNome(), quantidadeAtual);
+        AtualizarEstoqueDialog dialog =
+                new AtualizarEstoqueDialog(produto.getNome(), quantidadeAtual);
         dialog.showAndWait().ifPresent(novaQuantidade -> {
             try {
                 gerenteController.updateEstoque(produto.getCodigo(), novaQuantidade);
@@ -155,5 +190,19 @@ public class GerenciarEstoqueView extends VBox {
                 AlertFactory.showError("Erro", "Não foi possível atualizar o estoque: " + e.getMessage());
             }
         });
+    }
+
+    private void handleDeleteProduto(Produto produto) {
+        boolean confirmed = AlertFactory.showConfirmation("Confirmar Remoção",
+                "Tem certeza que deseja remover o produto '" + produto.getNome() + "' do catálogo? Esta ação não pode ser desfeita.");
+        if (confirmed) {
+            try {
+                gerenteController.removerProduto(produto.getCodigo());
+                loadEstoque();
+                AlertFactory.showInfo("Sucesso", "Produto removido com sucesso!");
+            } catch (Exception e) {
+                AlertFactory.showError("Erro", "Não foi possível remover o produto: " + e.getMessage());
+            }
+        }
     }
 }

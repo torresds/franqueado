@@ -1,3 +1,5 @@
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia;
 
 import javafx.application.Application;
@@ -55,10 +57,9 @@ public class FranquiaApp extends Application {
     @Override
     public void start(Stage stage) {
         this.primaryStage = stage;
-
         try {
             initializeRepositories();
-            loadData();
+            loadDataAndLinkEntities();
             initializeServices();
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -67,15 +68,50 @@ public class FranquiaApp extends Application {
         }
 
         primaryStage.setTitle("Franqueado");
-
         if (donoRepo.findAll().isEmpty()) {
             showOwnerCreationScreen();
         } else {
             showLoginScreen();
         }
-
         primaryStage.show();
     }
+
+    private void loadDataAndLinkEntities() throws Exception {
+        franquiaRepo.loadAllSync(5, TimeUnit.SECONDS);
+        vendedorRepo.loadAllSync(5, TimeUnit.SECONDS);
+        gerenteRepo.loadAllSync(5, TimeUnit.SECONDS);
+        donoRepo.loadAllSync(5, TimeUnit.SECONDS);
+        pedidoRepo.loadAllSync(5, TimeUnit.SECONDS);
+        clienteRepo.loadAllSync(5, TimeUnit.SECONDS);
+        linkEntities();
+    }
+
+    private void linkEntities() {
+        for (Franquia franquia : franquiaRepo.findAll()) {
+            if (franquia.getGerenteId() != null) {
+                gerenteRepo.findById(franquia.getGerenteId()).ifPresent(gerente -> {
+                    franquia.setGerente(gerente);
+                    gerente.setFranquia(franquia);
+                });
+            }
+        }
+
+        for (Vendedor vendedor : vendedorRepo.findAll()) {
+            if (vendedor.getFranquiaId() != null) {
+                franquiaRepo.findById(vendedor.getFranquiaId()).ifPresent(franquia -> {
+                    vendedor.setFranquia(franquia);
+                    franquia.adicionarVendedor(vendedor);
+                });
+            }
+        }
+
+        for (Pedido pedido : pedidoRepo.findAll()) {
+            clienteRepo.findById(pedido.getClienteId()).ifPresent(pedido::setCliente);
+            vendedorRepo.findById(pedido.getVendedorId()).ifPresent(pedido::setVendedor);
+            franquiaRepo.findById(pedido.getFranquiaId()).ifPresent(pedido::setFranquia);
+        }
+    }
+
 
     private void initializeRepositories() throws java.io.IOException {
         AsyncFileDAO<Franquia> franquiaDao = new AsyncFileDAO<>(Franquia.class);

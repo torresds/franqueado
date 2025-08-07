@@ -1,3 +1,5 @@
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.controller;
 
 import ufjf.dcc025.franquia.enums.TiposEntrega;
@@ -26,6 +28,9 @@ public class VendedorController {
     }
 
     public List<Produto> getProdutosDisponiveis() {
+        if (vendedorService.getVendedor().getFranquia() == null) {
+            return List.of();
+        }
         return vendedorService.getVendedor().getFranquia().getEstoque().keySet().stream().toList();
     }
 
@@ -35,5 +40,13 @@ public class VendedorController {
 
     public Pedido criarPedido(Cliente cliente, Map<Produto, Integer> produtos, TiposPagamento pagamento, TiposEntrega entrega) {
         return vendedorService.registrarPedido(cliente, produtos, pagamento, entrega);
+    }
+
+    public void solicitarAlteracao(String pedidoId, Map<Produto, Integer> novosProdutos, TiposEntrega novaEntrega) {
+        vendedorService.solicitarAlteracaoPedido(pedidoId, novosProdutos, novaEntrega);
+    }
+
+    public void solicitarCancelamento(String pedidoId) {
+        vendedorService.solicitarCancelamentoPedido(pedidoId);
     }
 }

@@ -1,21 +1,27 @@
-// FILE: src/main/java/ufjf/dcc025/franquia/view/VendedorDashboardView.java
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.view.vendedor;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import ufjf.dcc025.franquia.controller.VendedorController;
 import ufjf.dcc025.franquia.enums.EstadoPedido;
 import ufjf.dcc025.franquia.model.pedidos.Pedido;
 import ufjf.dcc025.franquia.service.VendedorService;
+import ufjf.dcc025.franquia.util.AlertFactory;
 import ufjf.dcc025.franquia.util.ComponentFactory;
 import ufjf.dcc025.franquia.util.IconManager;
 
@@ -106,7 +112,48 @@ public class VendedorDashboardView extends VBox {
             }
         });
 
-        table.getColumns().addAll(dateCol, clientCol, valueCol, statusCol);
+        TableColumn<Pedido, Void> actionCol = new TableColumn<>("Ações");
+        actionCol.setCellFactory(param -> new TableCell<>() {
+            private final Button editButton = new Button();
+            private final Button cancelButton = new Button();
+            private final HBox pane = new HBox(5, editButton, cancelButton);
+
+            {
+                pane.setAlignment(Pos.CENTER);
+                editButton.setGraphic(ComponentFactory.createIcon(IconManager.EDIT));
+                editButton.getStyleClass().add("table-action-button");
+                Tooltip.install(editButton, new Tooltip("Solicitar Alteração"));
+
+                cancelButton.setGraphic(ComponentFactory.createIcon(IconManager.DELETE));
+                cancelButton.getStyleClass().add("table-action-button");
+                Tooltip.install(cancelButton, new Tooltip("Solicitar Cancelamento"));
+
+                editButton.setOnAction(event -> {
+                    Pedido pedido = getTableView().getItems().get(getIndex());
+                    handleEditRequest(pedido);
+                });
+                cancelButton.setOnAction(event -> {
+                    Pedido pedido = getTableView().getItems().get(getIndex());
+                    handleCancelRequest(pedido);
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    Pedido pedido = getTableView().getItems().get(getIndex());
+                    // Vendedor só pode solicitar alteração/cancelamento de pedidos pendentes ou já aprovados
+                    boolean canRequest = pedido.isPendente() || pedido.isAprovado();
+                    pane.setVisible(canRequest);
+                    setGraphic(pane);
+                }
+            }
+        });
+
+        table.getColumns().addAll(dateCol, clientCol, valueCol, statusCol, actionCol);
         table.setItems(pedidosList);
         ComponentFactory.configureTable(table);
         return table;
@@ -114,5 +161,32 @@ public class VendedorDashboardView extends VBox {
 
     private void loadPedidos() {
         pedidosList.setAll(vendedorController.getPedidosDoVendedor());
+    }
+
+    private void handleEditRequest(Pedido pedido) {
+        AlterarPedidoDialog dialog = new AlterarPedidoDialog(pedido, vendedorController);
+        dialog.showAndWait().ifPresent(result -> {
+            try {
+                vendedorController.solicitarAlteracao(pedido.getId(), result.novosProdutos(), result.novaEntrega());
+                loadPedidos();
+                AlertFactory.showInfo("Sucesso", "Solicitação de alteração enviada ao gerente.");
+            } catch (Exception e) {
+                AlertFactory.showError("Erro", "Não foi possível solicitar a alteração: " + e.getMessage());
+            }
+        });
+    }
+
+    private void handleCancelRequest(Pedido pedido) {
+        boolean confirmed = AlertFactory.showConfirmation("Solicitar Cancelamento",
+                "Tem certeza que deseja solicitar o cancelamento do pedido " + pedido.getId() + "?");
+        if (confirmed) {
+            try {
+                vendedorController.solicitarCancelamento(pedido.getId());
+                loadPedidos();
+                AlertFactory.showInfo("Sucesso", "Solicitação de cancelamento enviada ao gerente.");
+            } catch (Exception e) {
+                AlertFactory.showError("Erro", "Não foi possível solicitar o cancelamento: " + e.getMessage());
+            }
+        }
     }
 }

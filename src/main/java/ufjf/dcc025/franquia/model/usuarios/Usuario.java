@@ -1,23 +1,26 @@
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.model.usuarios;
 
+import java.util.UUID;
 import java.util.regex.Pattern;
 import ufjf.dcc025.franquia.enums.TipoUsuario;
 import ufjf.dcc025.franquia.persistence.Identifiable;
 import ufjf.dcc025.franquia.exception.*;
 
 public abstract class Usuario implements Identifiable {
-    private String id;
+    private final String id;
     private String nome;
     private String cpf;
     private String email;
     private String senha;
 
     public Usuario(String nome, String cpf, String email, String senha) {
+        this.id = UUID.randomUUID().toString();
         setNome(nome);
         setCpf(cpf);
         setEmail(email);
         setSenha(senha);
-        setId();
     }
 
     public void setNome(String nome) {
@@ -28,9 +31,9 @@ public abstract class Usuario implements Identifiable {
     }
 
     public void setCpf(String cpf) {
-        /*if (!validarCPF(cpf)) {
+        if (!validarCPF(cpf)) {
             throw new DadosInvalidosException("CPF inválido.");
-        }*/
+        }
         this.cpf = cpf.replaceAll("[^0-9]", "");
     }
 
@@ -48,67 +51,42 @@ public abstract class Usuario implements Identifiable {
         this.senha = senha;
     }
 
-    protected void setId() {
-        String newId = getTipoUsuario().getPrefixo() + cpf;
-        this.id = newId;
-    }
-
-    protected void setId(String id) {
-        this.id = id;
-    }
-
     private boolean validarCPF(String cpf) {
-        cpf = cpf.replaceAll("[^0-9]", "");
-        if (cpf.length() != 11) {
-            return false;
-        }
-        if (cpf.matches("(\\d)\\1{10}")) {
-            return false;
-        }
-        int soma = 0;
-        for (int i = 0; i < 9; i++) {
-            soma += Character.getNumericValue(cpf.charAt(i)) * (10 - i);
-        }
-        int primeiroDigito = 11 - (soma % 11);
-        if (primeiroDigito >= 10) {
-            primeiroDigito = 0;
-        }
-        soma = 0;
-        for (int i = 0; i < 10; i++) {
-            soma += Character.getNumericValue(cpf.charAt(i)) * (11 - i);
-        }
-        int segundoDigito = 11 - (soma % 11);
-        if (segundoDigito >= 10) {
-            segundoDigito = 0;
-        }
-        return Character.getNumericValue(cpf.charAt(9)) == primeiroDigito &&
-               Character.getNumericValue(cpf.charAt(10)) == segundoDigito;
+        return true;
+        /**
+         *     cpf = cpf.replaceAll("[^0-9]", "");
+         *         if (cpf.length() != 11 || cpf.matches("(\\d)\\1{10}")) {
+         *             return false;
+         *         }
+         *         try {
+         *             int soma = 0;
+         *             for (int i = 0; i < 9; i++) {
+         *                 soma += Character.getNumericValue(cpf.charAt(i)) * (10 - i);
+         *             }
+         *             int primeiroDigito = 11 - (soma % 11);
+         *             if (primeiroDigito >= 10) primeiroDigito = 0;
+         *
+         *             soma = 0;
+         *             for (int i = 0; i < 10; i++) {
+         *                 soma += Character.getNumericValue(cpf.charAt(i)) * (11 - i);
+         *             }
+         *             int segundoDigito = 11 - (soma % 11);
+         *             if (segundoDigito >= 10) segundoDigito = 0;
+         *
+         *             return Character.getNumericValue(cpf.charAt(9)) == primeiroDigito &&
+         *                     Character.getNumericValue(cpf.charAt(10)) == segundoDigito;
+         *         } catch (Exception e) {
+         *             return false;
+         *         }
+         */
     }
 
-    public String getNome() {
-        return nome;
-    }
-
-    public String getCpf() {
-        return cpf;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-    
-    public String getSenha() {
-    	return senha;
-    }
-
+    // Getters
     @Override
-    public String getId() {
-        return id;
-    }
-
+    public String getId() { return id; }
+    public String getNome() { return nome; }
+    public String getCpf() { return cpf; }
+    public String getEmail() { return email; }
+    public String getSenha() { return senha; }
     public abstract TipoUsuario getTipoUsuario();
-
-    public boolean autenticar(String email, String senha) {
-        return this.email.equalsIgnoreCase(email) && this.senha.equals(senha);
-    }
 }

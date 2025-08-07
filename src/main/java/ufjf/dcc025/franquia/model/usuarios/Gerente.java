@@ -1,4 +1,5 @@
-// FILE: src/main/java/ufjf/dcc025/franquia/model/usuarios/Gerente.java
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.model.usuarios;
 
 import ufjf.dcc025.franquia.enums.TipoUsuario;
@@ -9,11 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Gerente extends Usuario {
+    private String franquiaId;
     private transient Franquia franquia; // Corrigido: Marcado como transient
+
     private List<String> pedidosPendentesId;
     private List<String> pedidosParaCancelarId;
     private List<Pedido> alteracoesPedidos;
-
     public Gerente(String nome, String cpf, String email, String senha) {
         super(nome, cpf, email, senha);
         this.pedidosPendentesId = new ArrayList<>();
@@ -25,9 +27,12 @@ public class Gerente extends Usuario {
     public Franquia getFranquia() {
         return franquia;
     }
-
+    public String getFranquiaId() {
+        return franquiaId;
+    }
     public void setFranquia(Franquia franquia) {
         this.franquia = franquia;
+        this.franquiaId = (franquia != null) ? franquia.getId() : null;
     }
 
     public List<String> getPedidosPendentesId() {

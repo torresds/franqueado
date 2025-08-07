@@ -164,6 +164,11 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 3);
 }
 
+.no-manager-warning {
+    -fx-border-color: -app-error-color;
+}
+
+
 .card-title {
     -fx-font-size: 16px;
     -fx-font-weight: 500;
@@ -205,6 +210,12 @@
     -fx-border-color: -app-border-color;
     -fx-border-radius: 8px;
     -fx-background-radius: 8px;
+}
+
+.warning-label-small {
+    -fx-font-size: 13px;
+    -fx-text-fill: -app-error-color;
+    -fx-font-weight: 500;
 }
 
 .table-view .column-header-background {
@@ -354,4 +365,14 @@
 }
 .axis {
     -fx-tick-label-fill: -app-text-secondary;
+}
+
+.status-alteracao_solicitada {
+    -fx-background-color: #e3f2fd;
+    -fx-text-fill: #1565c0;
+}
+
+.status-cancelamento_solicitado {
+    -fx-background-color: #fce4ec;
+    -fx-text-fill: #ad1457;
 }

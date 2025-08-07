@@ -1,4 +1,5 @@
-// FILE: src/main/java/ufjf/dcc025/franquia/controller/GerenteController.java
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.controller;
 
 import ufjf.dcc025.franquia.model.clientes.Cliente;
@@ -47,6 +48,14 @@ public class GerenteController {
         gerenteService.atualizarEstoqueProduto(codigoProduto, novaQuantidade);
     }
 
+    public void removerProduto(String codigoProduto) {
+        gerenteService.removerProduto(codigoProduto);
+    }
+
+    public List<Map.Entry<Produto, Integer>> getProdutosComEstoqueBaixo(int limite) {
+        return gerenteService.listarProdutosComEstoqueBaixo(limite);
+    }
+
     public List<Pedido> getPedidosDaFranquia() {
         return gerenteService.listarPedidosDaFranquia();
     }
@@ -55,6 +64,18 @@ public class GerenteController {
     }
     public void cancelarPedido(String pedidoId) {
         gerenteService.cancelarPedido(pedidoId);
+    }
+
+    public void aprovarAlteracaoPedido(String pedidoId) {
+        gerenteService.aprovarAlteracao(pedidoId);
+    }
+
+    public void aprovarCancelamentoPedido(String pedidoId) {
+        gerenteService.aprovarCancelamento(pedidoId);
+    }
+
+    public void negarSolicitacaoPedido(String pedidoId) {
+        gerenteService.negarSolicitacao(pedidoId);
     }
 
     public List<Vendedor> getRankingVendedoresLocal() {

@@ -1,3 +1,5 @@
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.view.dono;
 
 import javafx.collections.FXCollections;
@@ -25,7 +27,7 @@ import java.util.Optional;
 public class GerenciarFranquiasView extends VBox {
 
     private final DonoController donoController;
-    private final TableView<Franquia> table = new TableView<>(); // Corrigido: Inicializado na declaração
+    private final TableView<Franquia> table = new TableView<>();
     private final ObservableList<Franquia> franquiasList;
 
     public GerenciarFranquiasView(DonoService donoService) {
@@ -54,8 +56,6 @@ public class GerenciarFranquiasView extends VBox {
     }
 
     private void setupTable() {
-        // A linha "table = new TableView<>();" foi removida daqui
-
         // Coluna Nome
         TableColumn<Franquia, String> nameCol = new TableColumn<>("Nome");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("nome"));
@@ -131,13 +131,13 @@ public class GerenciarFranquiasView extends VBox {
         franquiasList.setAll(donoController.getFranquias());
     }
 
+
     private void handleAddFranquia() {
-        FranquiaDialog dialog = new FranquiaDialog(donoController.donoService.getGerenteRepo().findAll());
-        Optional<Franquia> result = dialog.showAndWait();
-        result.ifPresent(franquia -> {
+        FranquiaDialog dialog = new FranquiaDialog(donoController.donoService.getGerenteRepo().findAll(), null);
+        Optional<FranquiaDialog.Result> result = dialog.showAndWait();
+        result.ifPresent(data -> {
             try {
-                String gerenteId = (franquia.getGerente() != null) ? franquia.getGerente().getId() : null;
-                donoController.addFranquia(franquia.getNome(), franquia.getEndereco(), gerenteId);
+                donoController.addFranquia(data.nome(), data.endereco(), data.gerenteId());
                 loadFranquias();
                 AlertFactory.showInfo("Sucesso", "Franquia adicionada com sucesso!");
             } catch (Exception e) {
@@ -148,10 +148,11 @@ public class GerenciarFranquiasView extends VBox {
 
     private void handleEditFranquia(Franquia franquia) {
         FranquiaDialog dialog = new FranquiaDialog(donoController.donoService.getGerenteRepo().findAll(), franquia);
-        Optional<Franquia> result = dialog.showAndWait();
-        result.ifPresent(editedFranquia -> {
+        Optional<FranquiaDialog.Result> result = dialog.showAndWait();
+        result.ifPresent(data -> {
             try {
-                donoController.updateFranquia(editedFranquia.getId(), editedFranquia.getNome(), editedFranquia.getEndereco());
+                // Utilizando o método de atualização que agora inclui o ID do gerente
+                donoController.updateFranquia(data.original().getId(), data.nome(), data.endereco(), data.gerenteId());
                 loadFranquias();
                 AlertFactory.showInfo("Sucesso", "Franquia atualizada com sucesso!");
             } catch (Exception e) {
@@ -159,6 +160,7 @@ public class GerenciarFranquiasView extends VBox {
             }
         });
     }
+
 
     private void handleDeleteFranquia(Franquia franquia) {
         boolean confirmed = AlertFactory.showConfirmation("Confirmar Exclusão",

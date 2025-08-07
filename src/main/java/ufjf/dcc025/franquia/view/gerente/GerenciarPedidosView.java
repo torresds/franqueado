@@ -1,3 +1,5 @@
+// Discentes: Ana (202465512B), Miguel (202465506B)
+
 package ufjf.dcc025.franquia.view.gerente;
 
 import javafx.collections.FXCollections;
@@ -100,26 +102,28 @@ public class GerenciarPedidosView extends VBox {
         actionCol.setCellFactory(param -> new TableCell<>() {
             private final Button approveButton = new Button();
             private final Button cancelButton = new Button();
+            private final Button denyButton = new Button();
             private final HBox pane = new HBox(5);
 
             {
                 pane.setAlignment(Pos.CENTER);
+                // Botão Aprovar Padrão
                 approveButton.setGraphic(ComponentFactory.createIcon(IconManager.CHECK));
                 approveButton.getStyleClass().add("table-action-button");
                 Tooltip.install(approveButton, new Tooltip("Aprovar Pedido"));
+                approveButton.setOnAction(event -> handleApprove(getTableView().getItems().get(getIndex())));
 
-                cancelButton.setGraphic(ComponentFactory.createIcon(IconManager.CLOSE));
+                // Botão Cancelar Padrão
+                cancelButton.setGraphic(ComponentFactory.createIcon(IconManager.DELETE));
                 cancelButton.getStyleClass().add("table-action-button");
                 Tooltip.install(cancelButton, new Tooltip("Cancelar Pedido"));
+                cancelButton.setOnAction(event -> handleCancel(getTableView().getItems().get(getIndex())));
 
-                approveButton.setOnAction(event -> {
-                    Pedido pedido = getTableView().getItems().get(getIndex());
-                    handleApprove(pedido);
-                });
-                cancelButton.setOnAction(event -> {
-                    Pedido pedido = getTableView().getItems().get(getIndex());
-                    handleCancel(pedido);
-                });
+                // Botão Negar Solicitação
+                denyButton.setGraphic(ComponentFactory.createIcon(IconManager.CLOSE));
+                denyButton.getStyleClass().add("table-action-button");
+                Tooltip.install(denyButton, new Tooltip("Negar Solicitação"));
+                denyButton.setOnAction(event -> handleDeny(getTableView().getItems().get(getIndex())));
             }
 
             @Override
@@ -130,10 +134,24 @@ public class GerenciarPedidosView extends VBox {
                 } else {
                     Pedido pedido = getTableView().getItems().get(getIndex());
                     pane.getChildren().clear();
-                    if (pedido.isPendente()) {
-                        pane.getChildren().addAll(approveButton, cancelButton);
-                    } else if (pedido.isAprovado()){
-                        pane.getChildren().add(cancelButton);
+                    switch (pedido.getStatus()) {
+                        case PENDENTE:
+                            pane.getChildren().addAll(approveButton, cancelButton);
+                            break;
+                        case APROVADO:
+                            // Gerente pode cancelar diretamente um pedido aprovado
+                            pane.getChildren().add(cancelButton);
+                            break;
+                        case ALTERACAO_SOLICITADA:
+                            Tooltip.install(approveButton, new Tooltip("Aprovar Alteração"));
+                            pane.getChildren().addAll(approveButton, denyButton);
+                            break;
+                        case CANCELAMENTO_SOLICITADO:
+                            Tooltip.install(approveButton, new Tooltip("Confirmar Cancelamento"));
+                            pane.getChildren().addAll(approveButton, denyButton);
+                            break;
+                        default:
+                            break;
                     }
                     setGraphic(pane);
                 }
@@ -151,16 +169,31 @@ public class GerenciarPedidosView extends VBox {
 
     private void handleApprove(Pedido pedido) {
         try {
-            gerenteController.aprovarPedido(pedido.getId());
+            switch (pedido.getStatus()) {
+                case PENDENTE:
+                    gerenteController.aprovarPedido(pedido.getId());
+                    break;
+                case ALTERACAO_SOLICITADA:
+                    VisualizarAlteracaoDialog dialog = new VisualizarAlteracaoDialog(pedido);
+                    dialog.showAndWait().ifPresent(confirmed -> {
+                        if (confirmed) {
+                            gerenteController.aprovarAlteracaoPedido(pedido.getId());
+                        }
+                    });
+                    break;
+                case CANCELAMENTO_SOLICITADO:
+                    gerenteController.aprovarCancelamentoPedido(pedido.getId());
+                    break;
+            }
             loadPedidos();
         } catch (Exception e) {
-            AlertFactory.showError("Erro", "Não foi possível aprovar o pedido: " + e.getMessage());
+            AlertFactory.showError("Erro", "Não foi possível aprovar a ação: " + e.getMessage());
         }
     }
 
     private void handleCancel(Pedido pedido) {
         boolean confirmed = AlertFactory.showConfirmation("Confirmar Cancelamento",
-                "Tem certeza que deseja cancelar o pedido " + pedido.getId() + "?");
+                "Tem certeza que deseja cancelar o pedido " + pedido.getId() + "? Esta ação pode ser irreversível.");
         if (confirmed) {
             try {
                 gerenteController.cancelarPedido(pedido.getId());
@@ -168,6 +201,15 @@ public class GerenciarPedidosView extends VBox {
             } catch (Exception e) {
                 AlertFactory.showError("Erro", "Não foi possível cancelar o pedido: " + e.getMessage());
             }
+        }
+    }
+
+    private void handleDeny(Pedido pedido) {
+        try {
+            gerenteController.negarSolicitacaoPedido(pedido.getId());
+            loadPedidos();
+        } catch (Exception e) {
+            AlertFactory.showError("Erro", "Não foi possível negar a solicitação: " + e.getMessage());
         }
     }
 }
